@@ -5,7 +5,7 @@ const { generateToken } = require('../utils/token.util');
 const { hashPassword, comparePassword } = require('../utils/password.util');
 
 const TOKEN_EXPIRY_MINUTES = Number(process.env.TOKEN_EXPIRY_MINUTES || 10);
-const { USER_ROLES, USER_STATUSES } = require('../utils/constants.util');
+const { USER_ROLES, USER_STATUS } = require('../constants/user.constants');
 
 const addressSchema = new mongoose.Schema({
   street: {
@@ -90,8 +90,8 @@ const userSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: Object.values(USER_STATUSES),
-      default: USER_STATUSES.ACTIVE,
+      enum: Object.values(USER_STATUS),
+      default: USER_STATUS.ACTIVE,
     },
     isEmailVerified: {
       type: Boolean,
@@ -132,16 +132,10 @@ userSchema.virtual('fullName').get(function () {
   return `${this.firstName} ${this.lastName}`;
 });
 
-userSchema.pre('save', async function (next) {
-  try {
-    if (!this.isModified('password')) return next();
+userSchema.pre('save', async function () {
+  if (!this.isModified('password')) return;
 
-    this.password = await hashPassword(this.password);
-
-    next();
-  } catch (error) {
-    next(error);
-  }
+  this.password = await hashPassword(this.password);
 });
 
 userSchema.pre('findOneAndUpdate', async function (next) {
