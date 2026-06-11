@@ -1,10 +1,11 @@
 const User = require('../models/user.model');
+const AppError = require('../utils/app-error.util');
 
 const registerUser = async (userData) => {
   const existingUser = await User.findOne({ email: userData.email });
 
   if (existingUser) {
-    throw new Error('Email already exists');
+    throw new AppError('Email already exists', 409);
   }
 
   const user = new User({
