@@ -68,8 +68,8 @@ const userSchema = new mongoose.Schema(
     phone: {
       type: String,
       trim: true,
-      index: true,
       unique: true,
+      sparse: true,
       validate: {
         validator: (value) => !value || validator.isMobilePhone(value, 'any'),
         message: 'Invalid phone number',
