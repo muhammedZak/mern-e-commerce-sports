@@ -53,4 +53,8 @@ const loginValidation = [
   body('password').notEmpty().withMessage('Password is required'),
 ];
 
-module.exports = { registerValidation, loginValidation };
+const verifyEmailValidation = [
+  body('token').trim().notEmpty().withMessage('Verification token is required'),
+];
+
+module.exports = { registerValidation, loginValidation, verifyEmailValidation };

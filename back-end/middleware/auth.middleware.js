@@ -5,13 +5,11 @@ const { USER_STATUS } = require('../constants/user.constants');
 
 const protect = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
+    const token = req.cookies.accessToken;
 
-    if (!authHeader?.startsWith('Bearer ')) {
+    if (!token) {
       throw new AppError('Authentication required', 401);
     }
-
-    const token = authHeader.split(' ')[1];
 
     const decoded = verifyAccessToken(token);
 
@@ -41,3 +39,5 @@ const authorize = (...allowedRoles) => {
     next();
   };
 };
+
+module.exports = { protect, authorize };

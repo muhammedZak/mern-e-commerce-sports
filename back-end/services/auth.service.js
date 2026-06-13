@@ -2,6 +2,8 @@ const User = require('../models/user.model');
 const AppError = require('../utils/app-error.util');
 const { generateAccessToken } = require('../utils/jwt.util');
 const { USER_STATUS } = require('../constants/user.constants');
+const emailService = require('./email.service');
+const crypto = require('crypto');
 
 const registerUser = async (userData) => {
   const existingUser = await User.findOne({ email: userData.email });
@@ -17,6 +19,8 @@ const registerUser = async (userData) => {
     password: userData.password,
   });
 
+  const verificationToken = user.generateEmailVerificationToken();
+
   try {
     await user.save();
   } catch (error) {
@@ -29,11 +33,27 @@ const registerUser = async (userData) => {
     throw error;
   }
 
+  const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
+
+  try {
+    await emailService.sendVerificationEmail({
+      email: user.email,
+      firstName: user.firstName,
+      verificationUrl,
+    });
+  } catch (error) {
+    console.error('Failed to send verification email:', error);
+  }
+
   return {
     id: user._id,
     firstName: user.firstName,
     lastName: user.lastName,
+    fullName: user.fullName,
     email: user.email,
+    role: user.role,
+    status: user.status,
+    isEmailVerified: user.isEmailVerified,
   };
 };
 
@@ -71,4 +91,28 @@ const loginUser = async ({ email, password }) => {
   };
 };
 
-module.exports = { registerUser, loginUser };
+const verifyEmail = async ({ token }) => {
+  const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+  const user = await User.findOne({
+    emailVerificationToken: hashedToken,
+    emailVerificationTokenExpires: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    throw new AppError('Invalid or expired verification token', 400);
+  }
+
+  user.isEmailVerified = true;
+
+  user.emailVerificationToken = undefined;
+  user.emailVerificationTokenExpires = undefined;
+
+  await user.save();
+
+  return {
+    message: 'Email verified successfully',
+  };
+};
+
+module.exports = { registerUser, loginUser, verifyEmail };
