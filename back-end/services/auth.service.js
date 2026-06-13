@@ -15,7 +15,15 @@ const registerUser = async (userData) => {
     password: userData.password,
   });
 
-  await user.save();
+  try {
+    await user.save();
+  } catch (error) {
+    if (error.code === 11000) {
+      throw new AppError('Email already exists', 409);
+    }
+
+    throw error;
+  }
 
   return {
     id: user._id,
