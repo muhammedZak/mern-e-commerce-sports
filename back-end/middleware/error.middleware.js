@@ -1,13 +1,22 @@
+const AppError = require('../utils/app-error.util');
+
 const errorHandler = (err, req, res, next) => {
-  const statusCode = err.statusCode || 500;
+  if (err instanceof AppError) {
+    return res.status(err.statusCode).json({
+      success: false,
+      status: 'error',
+      message: err.message || 'Something went wrong',
+      errors: err.errors || [],
+    });
+  }
 
-  const status = err.status || 'error';
+  console.error('[UNEXPECTED ERROR]', err);
 
-  res.status(statusCode).json({
+  return res.status(500).json({
     success: false,
-    status,
-    message: err.message || 'Something went wrong',
-    errors: err.errors || [],
+    status: 'error',
+    message: 'Internal Server Error',
+    errors: [],
   });
 };
 
