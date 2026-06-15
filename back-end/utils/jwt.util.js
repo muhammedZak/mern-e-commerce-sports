@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const AppError = require('./app-error.util');
 
 const generateAccessToken = (payload) => {
   if (!process.env.JWT_SECRET) {
@@ -14,10 +15,7 @@ const verifyAccessToken = (token) => {
   try {
     return jwt.verify(token, process.env.JWT_SECRET);
   } catch (error) {
-    if (error.name === 'TokenExpiredError') {
-      throw new Error('Token expired');
-    }
-    throw new Error('Invalid token');
+    throw new AppError('Invalid or expired token', 401);
   }
 };
 
