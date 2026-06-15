@@ -5,6 +5,7 @@ const emailProvider = require('../providers/email.provider');
 
 const EMAIL_SUBJECTS = {
   VERIFY_EMAIL: 'Verify your email address',
+  RESET_PASSWORD: 'Reset password link',
 };
 
 const loadTemplate = (templateName) => {
@@ -38,6 +39,22 @@ const sendVerificationEmail = async ({ email, firstName, verificationUrl }) => {
   });
 };
 
+const sendPasswordResetEmail = async ({ email, firstName, resetUrl }) => {
+  const template = loadTemplate('reset-password-email.html');
+
+  const html = renderTemplate(template, {
+    firstName,
+    resetUrl,
+  });
+
+  await emailProvider.send({
+    to: email,
+    subject: EMAIL_SUBJECTS.RESET_PASSWORD,
+    html,
+  });
+};
+
 module.exports = {
   sendVerificationEmail,
+  sendPasswordResetEmail,
 };
