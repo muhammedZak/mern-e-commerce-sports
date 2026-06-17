@@ -34,6 +34,30 @@ const createProductValidation = [
     .withMessage('Stock quantity must be greater than or equal to 0'),
 ];
 
+const updateProductValidation = [
+  body('name')
+    .optional()
+    .trim()
+    .isLength({ max: 200 })
+    .withMessage('Product name cannot exceed 200 characters'),
+
+  body('price')
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage('Price must be greater than or equal to 0'),
+
+  body('compareAtPrice')
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage('Compare at price must be greater than or equal to 0'),
+
+  body('stockQuantity')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('Stock quantity must be greater than or equal to 0'),
+];
+
 module.exports = {
   createProductValidation,
+  updateProductValidation,
 };

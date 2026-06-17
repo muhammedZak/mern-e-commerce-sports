@@ -1,13 +1,22 @@
 const express = require('express');
 
+const { USER_ROLES } = require('../constants/user.constants');
+
 const router = express.Router();
 
 const {
   createProduct,
   getProducts,
+  getProduct,
+  updateProduct,
+  archiveProduct,
+  restoreProduct,
 } = require('../controllers/product.controller');
 
-const { createProductValidation } = require('../validators/product.validator');
+const {
+  createProductValidation,
+  updateProductValidation,
+} = require('../validators/product.validator');
 
 const validate = require('../middleware/validate.middleware');
 
@@ -16,12 +25,28 @@ const { protect, authorize } = require('../middleware/auth.middleware');
 router.post(
   '/',
   protect,
-  authorize('admin'),
+  authorize(USER_ROLES.ADMIN),
   createProductValidation,
   validate,
   createProduct,
 );
 
 router.get('/', getProducts);
+router.get('/:identifier', getProduct);
+router.patch(
+  '/:id',
+  protect,
+  authorize(USER_ROLES.ADMIN),
+  updateProductValidation,
+  validate,
+  updateProduct,
+);
+router.delete('/:id', protect, authorize(USER_ROLES.ADMIN), archiveProduct);
+router.patch(
+  '/:id/restore',
+  protect,
+  authorize(USER_ROLES.ADMIN),
+  restoreProduct,
+);
 
 module.exports = router;

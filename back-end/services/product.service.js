@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Product = require('../models/product.model');
 const AppError = require('../utils/app-error.util');
 const ApiQuery = require('../utils/api-query.util');
@@ -52,7 +53,93 @@ const getProducts = async (queryParams) => {
   };
 };
 
+const getProduct = async (identifier) => {
+  let query = {
+    isDeleted: false,
+    status: 'active',
+  };
+
+  if (mongoose.Types.ObjectId.isValid(identifier)) {
+    query._id = identifier;
+  } else {
+    query.slug = identifier;
+  }
+
+  const product = await Product.findOne(query);
+
+  if (!product) {
+    throw new AppError('Product not found', 404);
+  }
+
+  return product;
+};
+
+const updateProduct = async (productId, updateData) => {
+  const product = await Product.findById(productId);
+
+  if (!product || product.isDeleted) {
+    throw new AppError('Product not found', 404);
+  }
+
+  const allowedFields = [
+    'name',
+    'shortDescription',
+    'description',
+    'brand',
+    'price',
+    'compareAtPrice',
+    'stockQuantity',
+    'featured',
+    'status',
+    'images',
+  ];
+
+  Object.keys(updateData).forEach((key) => {
+    if (allowedFields.includes(key)) {
+      product[key] = updateData[key];
+    }
+  });
+
+  await product.save();
+
+  return product;
+};
+
+const archiveProduct = async (productId) => {
+  const product = await Product.findById(productId);
+
+  if (!product) {
+    throw new AppError('Product not found', 404);
+  }
+
+  product.isDeleted = true;
+  product.status = 'archived';
+
+  await product.save();
+
+  return;
+};
+
+const restoreProduct = async (productId) => {
+  const product = await Product.findById(productId);
+
+  if (!product) {
+    throw new AppError('Product not found', 404);
+  }
+
+  product.isDeleted = false;
+  product.status = 'active';
+
+  await product.save();
+
+  return product;
+};
+
 module.exports = {
   createProduct,
   getProducts,
+  getProduct,
+  updateProduct,
+  archiveProduct,
+  restoreProduct,
 };
