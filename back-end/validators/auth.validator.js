@@ -119,6 +119,49 @@ const updateProfileValidation = [
     .withMessage('Invalid phone number'),
 ];
 
+const changePasswordValidation = [
+  body('currentPassword')
+    .notEmpty()
+    .withMessage('Current password is required'),
+  body('newPassword')
+    .notEmpty()
+    .withMessage('New password is required')
+    .isLength({
+      min: 8,
+      max: 128,
+    })
+    .withMessage(
+      'Password must be at least 8 characters long and must not exceed 128 characters',
+    )
+    .isStrongPassword({
+      minLength: 8,
+      minLowercase: 1,
+      minUppercase: 1,
+      minNumbers: 1,
+      minSymbols: 1,
+    })
+    .withMessage(
+      'Password must contain uppercase, lowercase, number and special character',
+    )
+    .custom((value, { req }) => {
+      if (value === req.body.currentPassword) {
+        throw new Error('New password must be different from current password');
+      }
+
+      return true;
+    }),
+  body('confirmPassword')
+    .notEmpty()
+    .withMessage('Confirm password is required')
+    .custom((value, { req }) => {
+      if (value !== req.body.newPassword) {
+        throw new Error('Passwords do not match');
+      }
+
+      return true;
+    }),
+];
+
 module.exports = {
   registerValidation,
   loginValidation,
@@ -126,4 +169,5 @@ module.exports = {
   forgotPasswordValidation,
   resetPasswordValidation,
   updateProfileValidation,
+  changePasswordValidation,
 };

@@ -28,4 +28,21 @@ const updatedProfile = async (req, res, next) => {
   }
 };
 
-module.exports = { getProfile, updatedProfile };
+const changePassword = async (req, res, next) => {
+  try {
+    const result = await userService.changePassword(
+      req.user._id,
+      req.body.currentPassword,
+      req.body.newPassword,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: result.message,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { getProfile, updatedProfile, changePassword };
