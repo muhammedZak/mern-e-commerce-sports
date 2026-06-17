@@ -14,6 +14,20 @@ const createProduct = async (req, res, next) => {
   }
 };
 
+const getProducts = async (req, res, next) => {
+  try {
+    const result = await productService.getProducts(req.query);
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createProduct,
+  getProducts,
 };

@@ -2,7 +2,10 @@ const express = require('express');
 
 const router = express.Router();
 
-const { createProduct } = require('../controllers/product.controller');
+const {
+  createProduct,
+  getProducts,
+} = require('../controllers/product.controller');
 
 const { createProductValidation } = require('../validators/product.validator');
 
@@ -18,5 +21,7 @@ router.post(
   validate,
   createProduct,
 );
+
+router.get('/', getProducts);
 
 module.exports = router;
