@@ -16,6 +16,10 @@ const imageSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    isPrimary: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     _id: false,

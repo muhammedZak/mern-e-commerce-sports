@@ -2,6 +2,7 @@ const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const path = require('path');
 
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
@@ -36,6 +37,8 @@ app.get('/health', (req, res) => {
     status: 'success',
   });
 });
+
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
