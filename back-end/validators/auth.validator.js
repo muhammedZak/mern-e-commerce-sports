@@ -101,10 +101,29 @@ const resetPasswordValidation = [
     }),
 ];
 
+const updateProfileValidation = [
+  body('firstName')
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 50 })
+    .withMessage('First name must be between 1 and 50 characters'),
+  body('lastName')
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 50 })
+    .withMessage('Last name must be between 1 and 50 characters'),
+  body('phone')
+    .optional()
+    .trim()
+    .isMobilePhone()
+    .withMessage('Invalid phone number'),
+];
+
 module.exports = {
   registerValidation,
   loginValidation,
   verifyEmailValidation,
   forgotPasswordValidation,
   resetPasswordValidation,
+  updateProfileValidation,
 };
