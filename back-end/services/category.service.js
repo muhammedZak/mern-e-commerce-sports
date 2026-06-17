@@ -1,4 +1,5 @@
 const Category = require('../models/category.model');
+const Product = require('../models/product.model');
 const mongoose = require('mongoose');
 const AppError = require('../utils/app-error.util');
 const ApiQuery = require('../utils/api-query.util');
@@ -117,6 +118,59 @@ const restoreCategory = async (categoryId) => {
   return category;
 };
 
+const getCategoryProducts = async (slug, queryParams) => {
+  const category = await Category.findOne({
+    slug,
+    isDeleted: false,
+  });
+
+  if (!category) {
+    throw new AppError('Category not found', 404);
+  }
+
+  const queryBuilder = new ApiQuery(queryParams)
+    .filter(['brand', 'featured'])
+    .search(['name', 'brand']);
+
+  const filters = {
+    category: category._id,
+    isDeleted: false,
+    status: 'active',
+    ...queryBuilder.getFilters(),
+  };
+
+  const { page, limit, skip } = queryBuilder.getPagination();
+
+  const sort = queryBuilder.getSort();
+
+  const [products, total] = await Promise.all([
+    Product.find(filters)
+      .populate('category', 'name slug')
+      .sort(sort)
+      .skip(skip)
+      .limit(limit),
+
+    Product.countDocuments(filters),
+  ]);
+
+  return {
+    category: {
+      _id: category._id,
+      name: category.name,
+      slug: category.slug,
+    },
+
+    products,
+
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+};
+
 module.exports = {
   createCategory,
   getCategories,
@@ -124,4 +178,5 @@ module.exports = {
   updateCategory,
   archiveCategory,
   restoreCategory,
+  getCategoryProducts,
 };

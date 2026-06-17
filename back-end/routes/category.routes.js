@@ -9,6 +9,7 @@ const {
   updateCategory,
   archiveCategory,
   restoreCategory,
+  getCategoryProducts,
 } = require('../controllers/category.controller');
 
 const {
@@ -23,6 +24,7 @@ const { protect, authorize } = require('../middleware/auth.middleware');
 const { USER_ROLES } = require('../constants/user.constants');
 
 router.get('/', getCategories);
+router.get('/:slug/products', getCategoryProducts);
 router.get('/:identifier', getCategory);
 
 router.post(

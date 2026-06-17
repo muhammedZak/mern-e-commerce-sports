@@ -87,6 +87,22 @@ const restoreCategory = async (req, res, next) => {
   }
 };
 
+const getCategoryProducts = async (req, res, next) => {
+  try {
+    const result = await categoryService.getCategoryProducts(
+      req.params.slug,
+      req.query,
+    );
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createCategory,
   getCategories,
@@ -94,4 +110,5 @@ module.exports = {
   updateCategory,
   archiveCategory,
   restoreCategory,
+  getCategoryProducts,
 };
