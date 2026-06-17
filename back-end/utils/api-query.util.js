@@ -19,30 +19,12 @@ class ApiQuery {
     return this;
   }
 
-  filter() {
-    if (this.queryParams.brand) {
-      this.filters.brand = this.queryParams.brand;
-    }
-
-    if (this.queryParams.status) {
-      this.filters.status = this.queryParams.status;
-    }
-
-    if (this.queryParams.featured) {
-      this.filters.featured = this.queryParams.featured === 'true';
-    }
-
-    if (this.queryParams.minPrice || this.queryParams.maxPrice) {
-      this.filters.price = {};
-
-      if (this.queryParams.minPrice) {
-        this.filters.price.$gte = Number(this.queryParams.minPrice);
+  filter(allowedFilters = []) {
+    allowedFilters.forEach((field) => {
+      if (this.queryParams[field] !== undefined) {
+        this.filters[field] = this.queryParams[field];
       }
-
-      if (this.queryParams.maxPrice) {
-        this.filters.price.$lte = Number(this.queryParams.maxPrice);
-      }
-    }
+    });
 
     return this;
   }
