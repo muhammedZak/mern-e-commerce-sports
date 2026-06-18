@@ -1,8 +1,12 @@
+const path = require('path');
 const mongoose = require('mongoose');
 const Product = require('../models/product.model');
 const Category = require('../models/category.model');
 const AppError = require('../utils/app-error.util');
 const ApiQuery = require('../utils/api-query.util');
+
+const { MAX_PRODUCT_IMAGES } = require('../constants/upload.constants');
+const { isPrimary } = require('cluster');
 
 const createProduct = async (productData, userId) => {
   const existingSku = await Product.findOne({
@@ -151,6 +155,43 @@ const restoreProduct = async (productId) => {
   return product;
 };
 
+const uploadProductImages = async (productId, files) => {
+  const product = await Product.findOne({ _id: productId, isDeleted: false });
+
+  if (!product) {
+    throw new AppError('Product not found', 404);
+  }
+
+  if (!files || files.length === 0) {
+    throw new AppError('At least one image is required', 400);
+  }
+
+  const totalImages = product.images.length + files.length;
+
+  if (totalImages > MAX_PRODUCT_IMAGES) {
+    throw new AppError(`Maximum ${MAX_PRODUCT_IMAGES} images allowed`, 400);
+  }
+
+  const nextSortOrder =
+    product.images.length > 0
+      ? Math.max(...product.images.map((image) => image.sortOrder)) + 1
+      : 1;
+
+  const imageDocuments = files.map((file, index) => ({
+    url: `/uploads/products/${file.filename}`,
+    filename: file.filename,
+    alt: product.name,
+    isPrimary: product.images.length === 0 && index === 0,
+    sortOrder: nextSortOrder + 1,
+  }));
+
+  product.images.push(...imageDocuments);
+
+  await product.save();
+
+  return product;
+};
+
 module.exports = {
   createProduct,
   getProducts,
@@ -158,4 +199,5 @@ module.exports = {
   updateProduct,
   archiveProduct,
   restoreProduct,
+  uploadProductImages,
 };

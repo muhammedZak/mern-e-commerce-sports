@@ -81,6 +81,23 @@ const restoreProduct = async (req, res, next) => {
   }
 };
 
+const uploadProductImages = async (req, res, next) => {
+  try {
+    const product = await productService.uploadProductImages(
+      req.params.id,
+      req.files,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Images uploaded successfully',
+      data: product,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createProduct,
   getProducts,
@@ -88,4 +105,5 @@ module.exports = {
   updateProduct,
   archiveProduct,
   restoreProduct,
+  uploadProductImages,
 };
