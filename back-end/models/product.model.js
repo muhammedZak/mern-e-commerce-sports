@@ -184,7 +184,7 @@ productSchema.virtual('inventoryStatus').get(function () {
     return INVENTORY_STATUS.OUT_OF_STOCK;
   }
 
-  if (this.availableStock <= this.lowStockThreshold) {
+  if (this.availableStock <= this.lowStockThreshold)  {
     return INVENTORY_STATUS.LOW_STOCK;
   }
 

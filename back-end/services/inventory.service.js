@@ -71,8 +71,76 @@ const getInventorySummary = async (productId) => {
   };
 };
 
+const reserveStock = async (productId, quantity) => {
+  const product = await Product.findOne({
+    _id: productId,
+    isDeleted: false,
+  });
+
+  if (!product) {
+    throw new AppError('Product not found', 404);
+  }
+
+  if (product.availableStock < quantity) {
+    throw new AppError('Insufficient inventory available', 400);
+  }
+
+  product.reservedQuantity += quantity;
+
+  await product.save();
+
+  return product;
+};
+
+const releaseStock = async (productId, quantity) => {
+  const product = await Product.findOne({
+    _id: productId,
+    isDeleted: false,
+  });
+
+  if (!product) {
+    throw new AppError('Product not found', 404);
+  }
+
+  if (product.reservedQuantity < quantity) {
+    throw new AppError('Invalid reservation release', 400);
+  }
+
+  product.reservedQuantity -= quantity;
+
+  await product.save();
+
+  return product;
+};
+
+const commitStock = async (productId, quantity) => {
+  const product = await Product.findOne({
+    _id: productId,
+    isDeleted: false,
+  });
+
+  if (!product) {
+    throw new AppError('Product not found', 404);
+  }
+
+  if (product.reservedQuantity < quantity) {
+    throw new AppError('Insufficient reserved inventory', 400);
+  }
+
+  product.stockQuantity -= quantity;
+
+  product.reservedQuantity -= quantity;
+
+  await product.save();
+
+  return product;
+};
+
 module.exports = {
   adjustInventory,
   getInventoryHistory,
   getInventorySummary,
+  reserveStock,
+  releaseStock,
+  commitStock,
 };
