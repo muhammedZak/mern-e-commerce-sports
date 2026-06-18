@@ -105,6 +105,12 @@ const productSchema = new mongoose.Schema(
       default: 0,
     },
 
+    reservedQuantity: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
     images: {
       type: [imageSchema],
       default: [],
@@ -162,6 +168,18 @@ productSchema.pre('validate', function () {
 
 productSchema.virtual('isInStock').get(function () {
   return this.stockQuantity > 0;
+});
+
+productSchema.virtual('availableStock').get(function () {
+  return this.stockQuantity - this.reservedQuantity;
+});
+
+productSchema.virtual('inStock').get(function () {
+  return this.availableStock > 0;
+});
+
+productSchema.virtual('lowStock').get(function () {
+  return this.availableStock <= this.lowStockThreshold;
 });
 
 productSchema.pre('validate', function () {
