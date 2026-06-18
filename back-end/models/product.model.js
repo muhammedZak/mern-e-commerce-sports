@@ -11,14 +11,26 @@ const imageSchema = new mongoose.Schema(
       trim: true,
     },
 
-    altText: {
+    filename: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    alt: {
       type: String,
       trim: true,
       default: '',
     },
+
     isPrimary: {
       type: Boolean,
       default: false,
+    },
+
+    sortOrder: {
+      type: Number,
+      default: 0,
     },
   },
   {
@@ -135,6 +147,18 @@ const productSchema = new mongoose.Schema(
     },
   },
 );
+
+productSchema.virtual('primaryImage').get(function () {
+  return this.images.find((image) => image.isPrimary) || this.images[0] || null;
+});
+
+productSchema.pre('validate', function () {
+  const primaryImages = this.images.filter((image) => image.isPrimary);
+
+  if (primaryImages.length > 1) {
+    throw new Error('A product can only have one primary image');
+  }
+});
 
 productSchema.virtual('isInStock').get(function () {
   return this.stockQuantity > 0;
