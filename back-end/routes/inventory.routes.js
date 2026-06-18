@@ -5,13 +5,12 @@ const router = express.Router();
 const {
   adjustInventory,
   getInventoryHistory,
+  getInventorySummary,
 } = require('../controllers/inventory.controller');
 
-const protect = require('../middleware/protect');
+const { protect, authorize } = require('../middleware/auth.middleware');
 
-const authorize = require('../middleware/authorize');
-
-const validate = require('../middleware/validate');
+const validate = require('../middleware/validate.middleware');
 
 const {
   adjustInventoryValidation,
@@ -33,6 +32,13 @@ router.get(
   protect,
   authorize(USER_ROLES.ADMIN),
   getInventoryHistory,
+);
+
+router.get(
+  '/:productId/summary',
+  protect,
+  authorize(USER_ROLES.ADMIN),
+  getInventorySummary,
 );
 
 module.exports = router;

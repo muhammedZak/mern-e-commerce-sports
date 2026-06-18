@@ -49,7 +49,30 @@ const getInventoryHistory = async (productId) => {
   return history;
 };
 
+const getInventorySummary = async (productId) => {
+  const product = await Product.findOne({
+    _id: productId,
+    isDeleted: false,
+  });
+
+  if (!product) {
+    throw new AppError('Product not found', 404);
+  }
+
+  return {
+    productId: product._id,
+    stockQuantity: product.stockQuantity,
+    reservedQuantity: product.reservedQuantity,
+    availableStock: product.availableStock,
+    lowStockThreshold: product.lowStockThreshold,
+    inStock: product.inStock,
+    lowStock: product.lowStock,
+    inventoryStatus: product.inventoryStatus,
+  };
+};
+
 module.exports = {
   adjustInventory,
   getInventoryHistory,
+  getInventorySummary,
 };

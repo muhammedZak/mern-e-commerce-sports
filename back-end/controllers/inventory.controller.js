@@ -34,7 +34,23 @@ const getInventoryHistory = async (req, res, next) => {
   }
 };
 
+const getInventorySummary = async (req, res, next) => {
+  try {
+    const summary = await inventoryService.getInventorySummary(
+      req.params.productId,
+    );
+
+    res.status(200).json({
+      success: true,
+      data: summary,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   adjustInventory,
   getInventoryHistory,
+  getInventorySummary,
 };

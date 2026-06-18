@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const slugify = require('slugify');
 
 const { PRODUCT_STATUS } = require('../constants/product.constants');
+const { INVENTORY_STATUS } = require('../constants/inventory.constants');
 
 const imageSchema = new mongoose.Schema(
   {
@@ -166,10 +167,6 @@ productSchema.pre('validate', function () {
   }
 });
 
-productSchema.virtual('isInStock').get(function () {
-  return this.stockQuantity > 0;
-});
-
 productSchema.virtual('availableStock').get(function () {
   return this.stockQuantity - this.reservedQuantity;
 });
@@ -180,6 +177,18 @@ productSchema.virtual('inStock').get(function () {
 
 productSchema.virtual('lowStock').get(function () {
   return this.availableStock <= this.lowStockThreshold;
+});
+
+productSchema.virtual('inventoryStatus').get(function () {
+  if (this.availableStock <= 0) {
+    return INVENTORY_STATUS.OUT_OF_STOCK;
+  }
+
+  if (this.availableStock <= this.lowStockThreshold) {
+    return INVENTORY_STATUS.LOW_STOCK;
+  }
+
+  return INVENTORY_STATUS.IN_STOCK;
 });
 
 productSchema.pre('validate', function () {
