@@ -98,6 +98,23 @@ const uploadProductImages = async (req, res, next) => {
   }
 };
 
+const deleteProductImage = async (req, res, next) => {
+  try {
+    const product = await productService.deleteProductImage(
+      req.params.productId,
+      req.params.filename,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Image deleted successfully',
+      data: product,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createProduct,
   getProducts,
@@ -106,4 +123,5 @@ module.exports = {
   archiveProduct,
   restoreProduct,
   uploadProductImages,
+  deleteProductImage,
 };

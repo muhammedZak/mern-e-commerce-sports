@@ -14,6 +14,7 @@ const {
   archiveProduct,
   restoreProduct,
   uploadProductImages,
+  deleteProductImage,
 } = require('../controllers/product.controller');
 
 const {
@@ -58,6 +59,13 @@ router.post(
   authorize(USER_ROLES.ADMIN),
   upload.array('images', 10),
   uploadProductImages,
+);
+
+router.delete(
+  '/:id/images/:filename',
+  protect,
+  authorize(USER_ROLES.ADMIN),
+  deleteProductImage,
 );
 
 module.exports = router;

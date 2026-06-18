@@ -4,9 +4,8 @@ const Product = require('../models/product.model');
 const Category = require('../models/category.model');
 const AppError = require('../utils/app-error.util');
 const ApiQuery = require('../utils/api-query.util');
-
+const { deleteFile } = require('../utils/file.util');
 const { MAX_PRODUCT_IMAGES } = require('../constants/upload.constants');
-const { isPrimary } = require('cluster');
 
 const createProduct = async (productData, userId) => {
   const existingSku = await Product.findOne({
@@ -192,6 +191,43 @@ const uploadProductImages = async (productId, files) => {
   return product;
 };
 
+const deleteProductImage = async (productId, filename) => {
+  const product = await Product.findOne({
+    _id: productId,
+    isDeleted: false,
+  });
+
+  if (!product) {
+    throw new AppError('Product not found', 404);
+  }
+
+  const imageIndex = product.images.findIndex(
+    (image) => image.filename === filename,
+  );
+
+  if (imageIndex === -1) {
+    throw new AppError('Image not found', 404);
+  }
+
+  const imageToDelete = product.images[imageIndex];
+
+  const wasPrimary = imageToDelete.isPrimary;
+
+  product.images.splice(imageIndex, 1);
+
+  if (wasPrimary && product.images.length > 0) {
+    product.images[0].isPrimary = true;
+  }
+
+  await product.save();
+
+  const filePath = path.join(process.cwd(), 'uploads', 'products', filename);
+
+  await deleteFile(filePath);
+
+  return product;
+};
+
 module.exports = {
   createProduct,
   getProducts,
@@ -200,4 +236,5 @@ module.exports = {
   archiveProduct,
   restoreProduct,
   uploadProductImages,
+  deleteProductImage,
 };
