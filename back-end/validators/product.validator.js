@@ -57,7 +57,29 @@ const updateProductValidation = [
     .withMessage('Stock quantity must be greater than or equal to 0'),
 ];
 
+const setPrimaryImageValidation = [
+  body('filename').trim().notEmpty().withMessage('Filename is required'),
+];
+
+const reorderImagesValidation = [
+  body('images').isArray({ min: 1 }).withMessage('Images array is required'),
+];
+
+const updateImageAltTextValidation = [
+  body('filename').trim().notEmpty().withMessage('Filename is required'),
+
+  body('alt')
+    .trim()
+    .notEmpty()
+    .withMessage('Alt text is required')
+    .isLength({ max: 200 })
+    .withMessage('Alt text cannot exceed 200 characters'),
+];
+
 module.exports = {
   createProductValidation,
   updateProductValidation,
+  setPrimaryImageValidation,
+  reorderImagesValidation,
+  updateImageAltTextValidation,
 };

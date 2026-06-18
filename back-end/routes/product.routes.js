@@ -15,11 +15,17 @@ const {
   restoreProduct,
   uploadProductImages,
   deleteProductImage,
+  setPrimaryImage,
+  reorderImages,
+  updateImageAltText,
 } = require('../controllers/product.controller');
 
 const {
   createProductValidation,
   updateProductValidation,
+  setPrimaryImageValidation,
+  reorderImagesValidation,
+  updateImageAltTextValidation,
 } = require('../validators/product.validator');
 
 const validate = require('../middleware/validate.middleware');
@@ -66,6 +72,33 @@ router.delete(
   protect,
   authorize(USER_ROLES.ADMIN),
   deleteProductImage,
+);
+
+router.patch(
+  '/:Id/images/primary',
+  protect,
+  authorize(USER_ROLES.ADMIN),
+  setPrimaryImageValidation,
+  validate,
+  setPrimaryImage,
+);
+
+router.patch(
+  '/Id/images/reorder',
+  protect,
+  authorize(USER_ROLES.ADMIN),
+  reorderImagesValidation,
+  validate,
+  reorderImages,
+);
+
+router.patch(
+  '/:Id/images/alt-text',
+  protect,
+  authorize(USER_ROLES.ADMIN),
+  updateImageAltTextValidation,
+  validate,
+  updateImageAltText,
 );
 
 module.exports = router;

@@ -228,6 +228,93 @@ const deleteProductImage = async (productId, filename) => {
   return product;
 };
 
+const setPrimaryImage = async (productId, filename) => {
+  const product = await Product.findOne({
+    _id: productId,
+    isDeleted: false,
+  });
+
+  if (!product) {
+    throw new AppError('Product not found', 404);
+  }
+
+  const image = product.images.find((img) => img.filename === filename);
+
+  if (!image) {
+    throw new AppError('Image not found', 404);
+  }
+
+  product.images.forEach((img) => {
+    img.isPrimary = false;
+  });
+
+  image.isPrimary = true;
+
+  await product.save();
+
+  return product;
+};
+
+const reorderImages = async (productId, imageOrder) => {
+  const product = await Product.findOne({
+    _id: productId,
+    isDeleted: false,
+  });
+
+  if (!product) {
+    throw new AppError('Product not found', 404);
+  }
+
+  if (imageOrder.length !== product.images.length) {
+    throw new AppError('Image order does not match gallery', 400);
+  }
+
+  const imageMap = new Map();
+
+  product.images.forEach((image) => {
+    imageMap.set(image.filename, image);
+  });
+
+  imageOrder.forEach((filename, index) => {
+    const image = imageMap.get(filename);
+
+    if (!image) {
+      throw new AppError(`Invalid image: ${filename}`, 400);
+    }
+
+    image.sortOrder = index + 1;
+  });
+
+  product.images.sort((a, b) => a.sortOrder - b.sortOrder);
+
+  await product.save();
+
+  return product;
+};
+
+const updateImageAltText = async (productId, filename, alt) => {
+  const product = await Product.findOne({
+    _id: productId,
+    isDeleted: false,
+  });
+
+  if (!product) {
+    throw new AppError('Product not found', 404);
+  }
+
+  const image = product.images.find((img) => img.filename === filename);
+
+  if (!image) {
+    throw new AppError('Image not found', 404);
+  }
+
+  image.alt = alt;
+
+  await product.save();
+
+  return product;
+};
+
 module.exports = {
   createProduct,
   getProducts,
@@ -237,4 +324,7 @@ module.exports = {
   restoreProduct,
   uploadProductImages,
   deleteProductImage,
+  setPrimaryImage,
+  reorderImages,
+  updateImageAltText,
 };

@@ -101,13 +101,65 @@ const uploadProductImages = async (req, res, next) => {
 const deleteProductImage = async (req, res, next) => {
   try {
     const product = await productService.deleteProductImage(
-      req.params.productId,
+      req.params.id,
       req.params.filename,
     );
 
     res.status(200).json({
       success: true,
       message: 'Image deleted successfully',
+      data: product,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const setPrimaryImage = async (req, res, next) => {
+  try {
+    const product = await productService.setPrimaryImage(
+      req.params.id,
+      req.body.filename,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Primary image updated successfully',
+      data: product,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const reorderImages = async (req, res, next) => {
+  try {
+    const product = await productService.reorderImages(
+      req.params.id,
+      req.body.images,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Product gallery reordered successfully',
+      data: product,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateImageAltText = async (req, res, next) => {
+  try {
+    const product = await productService.updateImageAltText(
+      req.params.id,
+      req.body.filename,
+      req.body.alt,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Image alt text updated successfully',
       data: product,
     });
   } catch (error) {
@@ -124,4 +176,7 @@ module.exports = {
   restoreProduct,
   uploadProductImages,
   deleteProductImage,
+  setPrimaryImage,
+  reorderImages,
+  updateImageAltText,
 };
