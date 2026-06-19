@@ -1,16 +1,34 @@
-# dependencies
-node_modules
+# =========================
+# Dependencies
+# =========================
+node_modules/
 
-# environment variables
+# =========================
+# Environment Variables
+# =========================
 .env
 
-# production builds
-dist
-build
+# =========================
+# Production Builds
+# =========================
+dist/
+build/
 
-# logs
-logs
+# =========================
+# Uploads (Local Storage)
+# Product images uploaded via Multer.
+# Ignored because files are environment-specific.
+# Future Cloudinary migration will replace local storage.
+# =========================
+uploads/
+
+# =========================
+# Logs
+# =========================
+logs/
 *.log
 
-# OS files
+# =========================
+# OS Files
+# =========================
 .DS_Store
