@@ -49,8 +49,26 @@ const updateCartItemQuantity = async (req, res, next) => {
   }
 };
 
+const removeCartItem = async (req, res, next) => {
+  try {
+    const cart = await cartService.removeCartItem(
+      req.user.id,
+      req.params.productId,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Cart item removed successfully',
+      data: cart,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   addItemToCart,
   getMyCart,
   updateCartItemQuantity,
+  removeCartItem,
 };

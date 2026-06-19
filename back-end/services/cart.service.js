@@ -135,8 +135,46 @@ const updateCartItemQuantity = async (userId, productId, newQuantity) => {
   );
 };
 
+const removeCartItem = async (userId, productId) => {
+  const cart = await Cart.findOne({
+    user: userId,
+  });
+
+  if (!cart) {
+    throw new AppError('Cart not found', 404);
+  }
+
+  const item = cart.items.find((item) => item.product.toString() === productId);
+
+  if (!item) {
+    throw new AppError('Cart item not found', 404);
+  }
+
+  await inventoryService.releaseStock(productId, item.quantity);
+
+  cart.items = cart.items.filter(
+    (item) => item.product.toString() !== productId,
+  );
+
+  await cart.save();
+
+  return Cart.findById(cart._id).populate({
+    path: 'items.product',
+    select: [
+      'name',
+      'slug',
+      'price',
+      'images',
+      'stockQuantity',
+      'reservedQuantity',
+      'lowStockThreshold',
+    ].join(' '),
+  });
+};
+
 module.exports = {
   addItemToCart,
   getMyCart,
   updateCartItemQuantity,
+  removeCartItem,
 };
