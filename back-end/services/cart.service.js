@@ -61,6 +61,36 @@ const addItemToCart = async (userId, productId, quantity) => {
   );
 };
 
+const getMyCart = async (userId) => {
+  const cart = await Cart.findOne({
+    user: userId,
+  }).populate({
+    path: 'items.product',
+    select: [
+      'name',
+      'slug',
+      'price',
+      'images',
+      'stockQuantity',
+      'reservedQuantity',
+      'lowStockThreshold',
+      'status',
+      'isDeleted',
+    ].join(' '),
+  });
+
+  if (!cart) {
+    return {
+      items: [],
+      totalItems: 0,
+      subtotal: 0,
+    };
+  }
+
+  return cart;
+};
+
 module.exports = {
   addItemToCart,
+  getMyCart,
 };
