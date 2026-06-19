@@ -10,6 +10,7 @@ const productRoutes = require('./routes/product.routes');
 const categoryRoutes = require('./routes/category.routes');
 const inventoryRoutes = require('./routes/inventory.routes');
 const cartRoutes = require('./routes/cart.routes');
+const wishlistRoutes = require('./routes/wishlist.routes');
 
 const errorHandler = require('./middleware/error.middleware');
 const AppError = require('./utils/app-error.util');
@@ -48,6 +49,7 @@ app.use('/api/v1/products', productRoutes);
 app.use('/api/v1/categories', categoryRoutes);
 app.use('/api/v1/inventory', inventoryRoutes);
 app.use('/api/v1/cart', cartRoutes);
+app.use('/api/v1/wishlist', wishlistRoutes);
 
 app.use((req, res, next) => {
   next(new AppError(`Route ${req.originalUrl} not found`, 404));
