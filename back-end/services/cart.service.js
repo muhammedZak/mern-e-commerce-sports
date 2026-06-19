@@ -172,9 +172,34 @@ const removeCartItem = async (userId, productId) => {
   });
 };
 
+const clearCart = async (userId) => {
+  const cart = await Cart.findOne({
+    user: userId,
+  });
+
+  if (!cart) {
+    return {
+      items: [],
+      totalItems: 0,
+      subtotal: 0,
+    };
+  }
+
+  for (const item of cart.items) {
+    await inventoryService.releaseStock(item.product, item.quantity);
+  }
+
+  cart.items = [];
+
+  await cart.save();
+
+  return cart;
+};
+
 module.exports = {
   addItemToCart,
   getMyCart,
   updateCartItemQuantity,
   removeCartItem,
+  clearCart,
 };

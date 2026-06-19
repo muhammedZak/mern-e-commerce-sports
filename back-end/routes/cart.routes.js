@@ -7,6 +7,7 @@ const {
   getMyCart,
   updateCartItemQuantity,
   removeCartItem,
+  clearCart,
 } = require('../controllers/cart.controller');
 
 const { protect, authorize } = require('../middleware/auth.middleware');
@@ -28,5 +29,6 @@ router.patch(
   updateCartItemQuantity,
 );
 router.delete('/items/:productId', protect, removeCartItem);
+router.delete('/', protect, clearCart);
 
 module.exports = router;
