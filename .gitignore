@@ -20,7 +20,7 @@ build/
 # Ignored because files are environment-specific.
 # Future Cloudinary migration will replace local storage.
 # =========================
-uploads/
+back-end/uploads/
 
 # =========================
 # Logs
