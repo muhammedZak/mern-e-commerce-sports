@@ -75,7 +75,7 @@ router.delete(
 );
 
 router.patch(
-  '/:Id/images/primary',
+  '/:id/images/primary',
   protect,
   authorize(USER_ROLES.ADMIN),
   setPrimaryImageValidation,
@@ -84,7 +84,7 @@ router.patch(
 );
 
 router.patch(
-  '/Id/images/reorder',
+  '/:id/images/reorder',
   protect,
   authorize(USER_ROLES.ADMIN),
   reorderImagesValidation,
@@ -93,7 +93,7 @@ router.patch(
 );
 
 router.patch(
-  '/:Id/images/alt-text',
+  '/:id/images/alt-text',
   protect,
   authorize(USER_ROLES.ADMIN),
   updateImageAltTextValidation,

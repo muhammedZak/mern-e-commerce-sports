@@ -181,7 +181,7 @@ const uploadProductImages = async (productId, files) => {
     filename: file.filename,
     alt: product.name,
     isPrimary: product.images.length === 0 && index === 0,
-    sortOrder: nextSortOrder + 1,
+    sortOrder: nextSortOrder + index,
   }));
 
   product.images.push(...imageDocuments);
