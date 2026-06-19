@@ -90,7 +90,53 @@ const getMyCart = async (userId) => {
   return cart;
 };
 
+const updateCartItemQuantity = async (userId, productId, newQuantity) => {
+  const cart = await Cart.findOne({
+    user: userId,
+  });
+
+  if (!cart) {
+    throw new AppError('Cart not found', 404);
+  }
+
+  const item = cart.items.find((item) => item.product.toString() === productId);
+
+  if (!item) {
+    throw new AppError('Cart item not found', 404);
+  }
+
+  const oldQuantity = item.quantity;
+
+  const difference = newQuantity - oldQuantity;
+
+  if (difference > 0) {
+    await inventoryService.reserveStock(productId, difference);
+  }
+
+  if (difference < 0) {
+    await inventoryService.releaseStock(productId, Math.abs(difference));
+  }
+
+  item.quantity = newQuantity;
+
+  await cart.save();
+
+  return Cart.findById(cart._id).populate(
+    'items.product',
+    `
+    name
+    slug
+    price
+    images
+    stockQuantity
+    reservedQuantity
+    lowStockThreshold
+  `,
+  );
+};
+
 module.exports = {
   addItemToCart,
   getMyCart,
+  updateCartItemQuantity,
 };

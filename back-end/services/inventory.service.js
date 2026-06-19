@@ -102,12 +102,7 @@ const releaseStock = async (productId, quantity) => {
     throw new AppError('Product not found', 404);
   }
 
-  if (product.reservedQuantity < quantity) {
-    throw new AppError('Invalid reservation release', 400);
-  }
-
-  product.reservedQuantity -= quantity;
-
+  product.reservedQuantity = Math.max(0, product.reservedQuantity - quantity);
   await product.save();
 
   return product;
