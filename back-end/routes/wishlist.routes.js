@@ -10,10 +10,28 @@ const {
   removeFromWishlist,
 } = require('../controllers/wishlist.controller');
 
-router.get('/', protect, getMyWishlist);
+const validate = require('../middleware/validate.middleware');
 
-router.post('/:productId', protect, addToWishlist);
+const {
+  wishlistProductValidation,
+} = require('../validators/wishlist.validator');
 
-router.delete('/:productId', protect, removeFromWishlist);
+router.get('/', protect, wishlistProductValidation, validate, getMyWishlist);
+
+router.post(
+  '/:productId',
+  protect,
+  wishlistProductValidation,
+  validate,
+  addToWishlist,
+);
+
+router.delete(
+  '/:productId',
+  protect,
+  wishlistProductValidation,
+  validate,
+  removeFromWishlist,
+);
 
 module.exports = router;
