@@ -23,7 +23,7 @@ const login = async (req, res, next) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 24 * 60 * 60 * 1000,
+      maxAge: process.env.COOKIE_EXPIRES_IN * 60 * 1000,
     });
 
     res.status(200).json({

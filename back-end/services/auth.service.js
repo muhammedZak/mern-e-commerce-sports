@@ -74,6 +74,10 @@ const loginUser = async ({ email, password }) => {
     throw new AppError('Account is not active', 403);
   }
 
+  if (!user.isEmailVerified) {
+    throw new AppError('Please verify your email before logging in', 403);
+  }
+
   const token = generateAccessToken({ userId: user._id, role: user.role });
 
   return {
