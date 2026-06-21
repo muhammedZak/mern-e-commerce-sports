@@ -15,6 +15,7 @@ const {
 const {
   createCategoryValidation,
   updateCategoryValidation,
+  categoryIdValidation,
 } = require('../validators/category.validator');
 
 const validate = require('../middleware/validate.middleware');
@@ -40,17 +41,27 @@ router.patch(
   '/:id',
   protect,
   authorize(USER_ROLES.ADMIN),
+  categoryIdValidation,
   updateCategoryValidation,
   validate,
   updateCategory,
 );
 
-router.delete('/:id', protect, authorize(USER_ROLES.ADMIN), archiveCategory);
+router.delete(
+  '/:id',
+  protect,
+  authorize(USER_ROLES.ADMIN),
+  categoryIdValidation,
+  validate,
+  archiveCategory,
+);
 
 router.patch(
   '/:id/restore',
   protect,
   authorize(USER_ROLES.ADMIN),
+  categoryIdValidation,
+  validate,
   restoreCategory,
 );
 

@@ -14,6 +14,7 @@ const validate = require('../middleware/validate.middleware');
 
 const {
   adjustInventoryValidation,
+  inventoryProductIdValidation,
 } = require('../validators/inventory.validator');
 
 const { USER_ROLES } = require('../constants/user.constants');
@@ -22,6 +23,7 @@ router.patch(
   '/:productId/adjust',
   protect,
   authorize(USER_ROLES.ADMIN),
+  inventoryProductIdValidation,
   adjustInventoryValidation,
   validate,
   adjustInventory,
@@ -31,6 +33,8 @@ router.get(
   '/:productId/history',
   protect,
   authorize(USER_ROLES.ADMIN),
+  inventoryProductIdValidation,
+  validate,
   getInventoryHistory,
 );
 
@@ -38,6 +42,8 @@ router.get(
   '/:productId/summary',
   protect,
   authorize(USER_ROLES.ADMIN),
+  inventoryProductIdValidation,
+  validate,
   getInventorySummary,
 );
 

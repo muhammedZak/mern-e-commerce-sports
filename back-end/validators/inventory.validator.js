@@ -1,4 +1,4 @@
-const { body } = require('express-validator');
+const { body, param } = require('express-validator');
 
 const { INVENTORY_REASONS } = require('../constants/inventory.constants');
 
@@ -10,6 +10,11 @@ const adjustInventoryValidation = [
     .withMessage('Invalid inventory reason'),
 ];
 
+const inventoryProductIdValidation = [
+  param('productId').isMongoId().withMessage('Invalid product ID'),
+];
+
 module.exports = {
   adjustInventoryValidation,
+  inventoryProductIdValidation,
 };

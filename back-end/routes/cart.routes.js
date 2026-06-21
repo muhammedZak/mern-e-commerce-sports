@@ -17,6 +17,7 @@ const validate = require('../middleware/validate.middleware');
 const {
   addCartItemValidation,
   updateCartItemValidation,
+  cartProductIdValidation,
 } = require('../validators/cart.validator');
 
 router.post('/items', protect, addCartItemValidation, validate, addItemToCart);
@@ -24,11 +25,18 @@ router.get('/', protect, getMyCart);
 router.patch(
   '/items/:productId',
   protect,
+  cartProductIdValidation,
   updateCartItemValidation,
   validate,
   updateCartItemQuantity,
 );
-router.delete('/items/:productId', protect, removeCartItem);
+router.delete(
+  '/items/:productId',
+  protect,
+  cartProductIdValidation,
+  validate,
+  removeCartItem,
+);
 router.delete('/', protect, clearCart);
 
 module.exports = router;

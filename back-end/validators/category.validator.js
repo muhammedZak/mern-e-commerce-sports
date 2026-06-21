@@ -1,4 +1,4 @@
-const { body } = require('express-validator');
+const { body, param } = require('express-validator');
 
 const createCategoryValidation = [
   body('name')
@@ -31,7 +31,12 @@ const updateCategoryValidation = [
   body('image').optional().isURL().withMessage('Image must be a valid URL'),
 ];
 
+const categoryIdValidation = [
+  param('id').isMongoId().withMessage('Invalid category ID'),
+];
+
 module.exports = {
   createCategoryValidation,
   updateCategoryValidation,
+  categoryIdValidation,
 };

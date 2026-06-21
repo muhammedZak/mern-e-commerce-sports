@@ -1,4 +1,4 @@
-const { body } = require('express-validator');
+const { body, param } = require('express-validator');
 
 const createProductValidation = [
   body('name')
@@ -76,10 +76,15 @@ const updateImageAltTextValidation = [
     .withMessage('Alt text cannot exceed 200 characters'),
 ];
 
+const productIdValidation = [
+  param('id').isMongoId().withMessage('Invalid product ID'),
+];
+
 module.exports = {
   createProductValidation,
   updateProductValidation,
   setPrimaryImageValidation,
   reorderImagesValidation,
   updateImageAltTextValidation,
+  productIdValidation,
 };
