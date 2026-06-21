@@ -3,6 +3,8 @@ const InventoryHistory = require('../models/inventory-history.model');
 
 const AppError = require('../utils/app-error.util');
 
+const { PRODUCT_STATUS } = require('../constants/product.constants');
+
 const adjustInventory = async (productId, adjustment, reason, userId) => {
   const product = await Product.findOne({
     _id: productId,
@@ -72,22 +74,33 @@ const getInventorySummary = async (productId) => {
 };
 
 const reserveStock = async (productId, quantity) => {
-  const product = await Product.findOne({
-    _id: productId,
-    isDeleted: false,
-  });
+  const product = await Product.findOneAndUpdate(
+    {
+      _id: productId,
+      isDeleted: false,
+      status: PRODUCT_STATUS.ACTIVE,
+      $expr: {
+        $gte: [
+          {
+            $subtract: ['$stockQuantity', '$reservedQuantity'],
+          },
+          quantity,
+        ],
+      },
+    },
+    {
+      $inc: {
+        reservedQuantity: quantity,
+      },
+    },
+    {
+      new: true,
+    },
+  );
 
   if (!product) {
-    throw new AppError('Product not found', 404);
-  }
-
-  if (product.availableStock < quantity) {
     throw new AppError('Insufficient inventory available', 400);
   }
-
-  product.reservedQuantity += quantity;
-
-  await product.save();
 
   return product;
 };
@@ -102,31 +115,38 @@ const releaseStock = async (productId, quantity) => {
     throw new AppError('Product not found', 404);
   }
 
-  product.reservedQuantity = Math.max(0, product.reservedQuantity - quantity);
+  const releaseAmount = Math.min(quantity, product.reservedQuantity);
+
+  product.reservedQuantity -= releaseAmount;
+
   await product.save();
 
   return product;
 };
 
 const commitStock = async (productId, quantity) => {
-  const product = await Product.findOne({
-    _id: productId,
-    isDeleted: false,
-  });
+  const product = await Product.findOneAndUpdate(
+    {
+      _id: productId,
+      isDeleted: false,
+      reservedQuantity: {
+        $gte: quantity,
+      },
+    },
+    {
+      $inc: {
+        stockQuantity: -quantity,
+        reservedQuantity: -quantity,
+      },
+    },
+    {
+      new: true,
+    },
+  );
 
   if (!product) {
-    throw new AppError('Product not found', 404);
-  }
-
-  if (product.reservedQuantity < quantity) {
     throw new AppError('Insufficient reserved inventory', 400);
   }
-
-  product.stockQuantity -= quantity;
-
-  product.reservedQuantity -= quantity;
-
-  await product.save();
 
   return product;
 };

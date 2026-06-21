@@ -33,19 +33,27 @@ const addItemToCart = async (userId, productId, quantity) => {
     (item) => item.product.toString() === productId,
   );
 
-  await inventoryService.reserveStock(productId, quantity);
+  try {
+    await inventoryService.reserveStock(productId, quantity);
 
-  if (existingItem) {
-    existingItem.quantity += quantity;
-  } else {
-    cart.items.push({
-      product: product._id,
-      quantity,
-      priceSnapshot: product.price,
-    });
+    if (existingItem) {
+      existingItem.quantity += quantity;
+    } else {
+      cart.items.push({
+        product: product._id,
+        quantity,
+        priceSnapshot: product.price,
+      });
+    }
+
+    await cart.save();
+  } catch (error) {
+    try {
+      await inventoryService.releaseStock(productId, quantity);
+    } catch (_) {}
+
+    throw error;
   }
-
-  await cart.save();
 
   return Cart.findById(cart._id).populate(
     'items.product',
