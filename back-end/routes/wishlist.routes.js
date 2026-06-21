@@ -16,7 +16,7 @@ const {
   wishlistProductValidation,
 } = require('../validators/wishlist.validator');
 
-router.get('/', protect, wishlistProductValidation, validate, getMyWishlist);
+router.get('/', protect, getMyWishlist);
 
 router.post(
   '/:productId',
