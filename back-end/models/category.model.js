@@ -69,4 +69,9 @@ categorySchema.set('toJSON', {
   virtuals: true,
 });
 
+categorySchema.index({
+  status: 1,
+  isDeleted: 1,
+});
+
 module.exports = mongoose.model('Category', categorySchema);

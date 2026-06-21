@@ -184,7 +184,7 @@ productSchema.virtual('inventoryStatus').get(function () {
     return INVENTORY_STATUS.OUT_OF_STOCK;
   }
 
-  if (this.availableStock <= this.lowStockThreshold)  {
+  if (this.availableStock <= this.lowStockThreshold) {
     return INVENTORY_STATUS.LOW_STOCK;
   }
 
@@ -220,6 +220,22 @@ productSchema.index({
 productSchema.index({
   category: 1,
   status: 1,
+});
+
+productSchema.index({
+  isDeleted: 1,
+  status: 1,
+});
+
+productSchema.index({
+  name: 'text',
+  brand: 'text',
+});
+
+productSchema.index({
+  featured: 1,
+  status: 1,
+  isDeleted: 1,
 });
 
 module.exports = mongoose.model('Product', productSchema);

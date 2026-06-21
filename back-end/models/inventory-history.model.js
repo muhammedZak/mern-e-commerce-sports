@@ -39,4 +39,14 @@ const inventoryHistorySchema = new mongoose.Schema(
   },
 );
 
+inventoryHistorySchema.index({
+  product: 1,
+  createdAt: -1,
+});
+
+inventoryHistorySchema.index({
+  adjustedBy: 1,
+  createdAt: -1,
+});
+
 module.exports = mongoose.model('InventoryHistory', inventoryHistorySchema);

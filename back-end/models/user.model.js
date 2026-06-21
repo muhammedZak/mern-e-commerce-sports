@@ -128,6 +128,21 @@ const userSchema = new mongoose.Schema(
   },
 );
 
+userSchema.index({
+  role: 1,
+  status: 1,
+});
+
+userSchema.index({
+  passwordResetToken: 1,
+  passwordResetExpires: 1,
+});
+
+userSchema.index({
+  emailVerificationToken: 1,
+  emailVerificationTokenExpires: 1,
+});
+
 userSchema.virtual('fullName').get(function () {
   return `${this.firstName} ${this.lastName}`;
 });
