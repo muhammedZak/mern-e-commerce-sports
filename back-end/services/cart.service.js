@@ -1,6 +1,8 @@
 const Cart = require('../models/cart.model');
 const Product = require('../models/product.model');
 
+const mongoose = require('mongoose');
+
 const AppError = require('../utils/app-error.util');
 
 const inventoryService = require('./inventory.service');
@@ -33,31 +35,32 @@ const addItemToCart = async (userId, productId, quantity) => {
     (item) => item.product.toString() === productId,
   );
 
+  const session = await mongoose.startSession();
+
   try {
-    await inventoryService.reserveStock(productId, quantity);
+    let result;
 
-    if (existingItem) {
-      existingItem.quantity += quantity;
-    } else {
-      cart.items.push({
-        product: product._id,
-        quantity,
-        priceSnapshot: product.price,
-      });
-    }
+    await session.withTransaction(async () => {
+      await inventoryService.reserveStock(productId, quantity, session);
 
-    await cart.save();
-  } catch (error) {
-    try {
-      await inventoryService.releaseStock(productId, quantity);
-    } catch (_) {}
+      if (existingItem) {
+        existingItem.quantity += quantity;
+      } else {
+        cart.items.push({
+          product: product._id,
+          quantity,
+          priceSnapshot: product.price,
+        });
+      }
 
-    throw error;
-  }
+      await cart.save({ session });
 
-  return Cart.findById(cart._id).populate(
-    'items.product',
-    `
+      result = cart._id;
+    });
+
+    return Cart.findById(result).populate(
+      'items.product',
+      `
     name
     slug
     price
@@ -66,7 +69,10 @@ const addItemToCart = async (userId, productId, quantity) => {
     reservedQuantity
     lowStockThreshold
   `,
-  );
+    );
+  } finally {
+    await session.endSession();
+  }
 };
 
 const getMyCart = async (userId) => {
@@ -117,17 +123,29 @@ const updateCartItemQuantity = async (userId, productId, newQuantity) => {
 
   const difference = newQuantity - oldQuantity;
 
-  if (difference > 0) {
-    await inventoryService.reserveStock(productId, difference);
+  const session = await mongoose.startSession();
+
+  try {
+    await session.withTransaction(async () => {
+      if (difference > 0) {
+        await inventoryService.reserveStock(productId, difference, session);
+      }
+
+      if (difference < 0) {
+        await inventoryService.releaseStock(
+          productId,
+          Math.abs(difference),
+          session,
+        );
+      }
+
+      item.quantity = newQuantity;
+
+      await cart.save({ session });
+    });
+  } finally {
+    await session.endSession();
   }
-
-  if (difference < 0) {
-    await inventoryService.releaseStock(productId, Math.abs(difference));
-  }
-
-  item.quantity = newQuantity;
-
-  await cart.save();
 
   return Cart.findById(cart._id).populate(
     'items.product',
@@ -158,13 +176,21 @@ const removeCartItem = async (userId, productId) => {
     throw new AppError('Cart item not found', 404);
   }
 
-  await inventoryService.releaseStock(productId, item.quantity);
+  const session = await mongoose.startSession();
 
-  cart.items = cart.items.filter(
-    (item) => item.product.toString() !== productId,
-  );
+  try {
+    await session.withTransaction(async () => {
+      await inventoryService.releaseStock(productId, item.quantity, session);
 
-  await cart.save();
+      cart.items = cart.items.filter(
+        (item) => item.product.toString() !== productId,
+      );
+
+      await cart.save({ session });
+    });
+  } finally {
+    await session.endSession();
+  }
 
   return Cart.findById(cart._id).populate({
     path: 'items.product',
@@ -193,13 +219,25 @@ const clearCart = async (userId) => {
     };
   }
 
-  for (const item of cart.items) {
-    await inventoryService.releaseStock(item.product, item.quantity);
+  const session = await mongoose.startSession();
+
+  try {
+    await session.withTransaction(async () => {
+      for (const item of cart.items) {
+        await inventoryService.releaseStock(
+          item.product,
+          item.quantity,
+          session,
+        );
+      }
+
+      cart.items = [];
+
+      await cart.save({ session });
+    });
+  } finally {
+    await session.endSession();
   }
-
-  cart.items = [];
-
-  await cart.save();
 
   return cart;
 };

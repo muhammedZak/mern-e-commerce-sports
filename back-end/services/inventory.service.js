@@ -73,7 +73,7 @@ const getInventorySummary = async (productId) => {
   };
 };
 
-const reserveStock = async (productId, quantity) => {
+const reserveStock = async (productId, quantity, session = null) => {
   const product = await Product.findOneAndUpdate(
     {
       _id: productId,
@@ -95,6 +95,7 @@ const reserveStock = async (productId, quantity) => {
     },
     {
       new: true,
+      session,
     },
   );
 
@@ -105,11 +106,15 @@ const reserveStock = async (productId, quantity) => {
   return product;
 };
 
-const releaseStock = async (productId, quantity) => {
-  const product = await Product.findOne({
-    _id: productId,
-    isDeleted: false,
-  });
+const releaseStock = async (productId, quantity, session = null) => {
+  const product = await Product.findOne(
+    {
+      _id: productId,
+      isDeleted: false,
+    },
+    null,
+    { session },
+  );
 
   if (!product) {
     throw new AppError('Product not found', 404);
@@ -119,12 +124,12 @@ const releaseStock = async (productId, quantity) => {
 
   product.reservedQuantity -= releaseAmount;
 
-  await product.save();
+  await product.save({ session });
 
   return product;
 };
 
-const commitStock = async (productId, quantity) => {
+const commitStock = async (productId, quantity, session = null) => {
   const product = await Product.findOneAndUpdate(
     {
       _id: productId,
@@ -141,6 +146,7 @@ const commitStock = async (productId, quantity) => {
     },
     {
       new: true,
+      session,
     },
   );
 
