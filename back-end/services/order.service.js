@@ -126,9 +126,19 @@ const createOrder = async (userId, addressId, notes = '') => {
 const getMyOrders = async (userId) => {
   return Order.find({
     user: userId,
-  }).sort({
-    createdAt: -1,
-  });
+  })
+    .select(
+      `
+    orderNumber
+    total
+    orderStatus
+    paymentStatus
+    createdAt
+  `,
+    )
+    .sort({
+      createdAt: -1,
+    });
 };
 
 const getOrderById = async (orderId, userId) => {
