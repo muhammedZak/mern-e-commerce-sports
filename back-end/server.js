@@ -11,7 +11,7 @@ const startServer = async () => {
     await connectDB();
 
     await emailProvider.verifyConnection();
-
+    app.set('trust proxy', 1);
     app.listen(PORT, () => {
       console.log(`[SERVER] running on port ${PORT}`);
     });
