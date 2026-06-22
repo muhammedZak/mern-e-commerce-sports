@@ -15,6 +15,7 @@ const inventoryRoutes = require('./routes/inventory.routes');
 const cartRoutes = require('./routes/cart.routes');
 const wishlistRoutes = require('./routes/wishlist.routes');
 const orderRoutes = require('./routes/order.routes');
+const checkoutRoutes = require('./routes/checkout.routes');
 
 const errorHandler = require('./middleware/error.middleware');
 const AppError = require('./utils/app-error.util');
@@ -79,6 +80,7 @@ app.use('/api/v1/inventory', inventoryRoutes);
 app.use('/api/v1/cart', cartRoutes);
 app.use('/api/v1/wishlist', wishlistRoutes);
 app.use('/api/v1/orders', orderRoutes);
+app.use('/api/v1/checkout', checkoutRoutes);
 
 app.use((req, res, next) => {
   next(new AppError(`Route ${req.originalUrl} not found`, 404));
