@@ -2,346 +2,533 @@
 
 Last audited against code: 2026-06-21.
 
-This document is the high-context seed for developers and LLM agents working on this repository. It explains what exists today, the intended architecture, coding standards, implementation goals, and the prioritized roadmap for turning the project into a production-ready sports e-commerce platform.
+The **MERN Sports E-commerce Platform** is a production-oriented online sports retail backend with a React frontend scaffold. The backend exposes a versioned REST API (`/api/v1`) for customer accounts, product catalog management, inventory control, shopping cart, wishlist, and order placement. Business logic lives in service classes; HTTP concerns stay in controllers; persistence is handled through Mongoose models.
 
-## Product Vision
+The frontend (`front-end/`) is a Vite + React 19 + Tailwind CSS starter with no API integration yet. The backend (`back-end/`) is the primary implemented system and follows a consistent **Route → Controller → Service → Model** architecture.
 
-The project is a MERN sports e-commerce platform. The intended product is a full online sports retail store where customers can:
+---
 
-- Register, verify email, log in, and manage profile details.
-- Browse categories and active products.
-- View product images, prices, stock state, and product details.
-- Add products to cart with inventory reservations.
-- Save products to a wishlist.
-- Checkout, pay, track orders, request returns, and review products in future phases.
+# Vision
 
-Administrators should eventually be able to:
+The platform aims to become a full-featured sports e-commerce store where:
 
-- Manage categories, products, images, and inventory.
-- View inventory history and low-stock state.
-- Manage orders, fulfillment, returns, refunds, coupons, analytics, and users.
+**Customers** can register, verify their email, browse categories and products, manage a cart with real-time stock reservations, save items to a wishlist, place orders from saved addresses, pay securely, and track fulfillment.
 
-## Repository Status
+**Administrators** can manage the catalog (categories, products, images), adjust inventory with audit history, oversee orders through their lifecycle, and eventually access analytics, promotions, and user management tools.
 
-| Area | Path | Stack | Status |
-|------|------|-------|--------|
-| Backend API | `back-end/` | Node.js, Express 5, MongoDB, Mongoose | Substantially implemented |
-| Frontend | `front-end/` | React 19, Vite, Tailwind CSS | Scaffold only |
-| Documentation | `docs/` | Markdown | Current audit docs exist |
+The current codebase delivers a strong **catalog + inventory + cart + auth** foundation. Commerce completion (payments, fulfillment, customer UI, admin dashboard) remains future work, but the layered architecture is designed to absorb those modules without structural rewrites.
 
-The backend is the primary implemented system. The frontend is currently a scaffold and should be treated as future implementation work.
+---
 
-## Intended Architecture
+# Current Backend Status
 
-The backend follows a layered, domain-sliced architecture:
+The following modules exist in `back-end/` with routes, controllers, services, and models (where applicable):
+
+| Module | Status | Location |
+|--------|--------|----------|
+| Application bootstrap | ✅ Completed | `server.js`, `app.js`, `config/db.js` |
+| Authentication | ✅ Completed | `routes/auth.routes.js`, `services/auth.service.js` |
+| User management | ✅ Completed | `routes/user.routes.js`, `services/user.service.js` |
+| Categories | ✅ Completed | `routes/category.routes.js`, `services/category.service.js` |
+| Products | ✅ Completed | `routes/product.routes.js`, `services/product.service.js` |
+| Product images | ✅ Completed | Multer upload + embedded `images[]` on Product |
+| Inventory | ✅ Completed | `routes/inventory.routes.js`, `services/inventory.service.js` |
+| Cart | ✅ Completed | `routes/cart.routes.js`, `services/cart.service.js` |
+| Wishlist | ✅ Completed | `routes/wishlist.routes.js`, `services/wishlist.service.js` |
+| Orders | 🟡 Partially Implemented | Code exists but server fails to boot (see Technical Debt) |
+| Email (SMTP) | ✅ Completed | `services/email.service.js`, `providers/email.provider.js` |
+| Local file storage | ✅ Completed | `providers/storage/localStorage.provider.js`, `/uploads` |
+| Frontend | 🟡 Partially Implemented | Vite/React scaffold only (`front-end/src/App.jsx`) |
+
+**Not implemented:** payments, checkout as a separate orchestration layer, shipping/fulfillment APIs, reviews, coupons, admin dashboard UI, analytics, Cloudinary/S3 storage, automated tests, CI/CD.
+
+---
+
+# Implemented Features
+
+## Authentication
+
+- [x] Register (`POST /api/v1/auth/register`)
+- [x] Login with JWT stored in HTTP-only cookie (`POST /api/v1/auth/login`)
+- [x] Logout — clears cookie (`POST /api/v1/auth/logout`)
+- [x] Get current auth user (`GET /api/v1/auth/me`)
+- [x] Email verification via hashed token (`POST /api/v1/auth/verify-email`)
+- [x] Forgot password — generic response, sends reset email (`POST /api/v1/auth/forgot-password`)
+- [x] Reset password via hashed token (`POST /api/v1/auth/reset-password`)
+- [x] Email verification required before login
+- [x] Rate limiting on auth routes (10 req / 15 min)
+- [ ] Refresh tokens
+- [ ] Resend verification email endpoint
+- [ ] Phone verification (model scaffolding only)
+
+## User Management
+
+- [x] Get profile with addresses (`GET /api/v1/users/me`)
+- [x] Update profile — `firstName`, `lastName`, `phone` (`PATCH /api/v1/users/me`)
+- [x] Change password (`PATCH /api/v1/users/change-password`)
+- [x] List addresses (`GET /api/v1/users/addresses`)
+- [x] Add address with primary promotion logic (`POST /api/v1/users/addresses`)
+- [x] Update address (`PATCH /api/v1/users/addresses/:addressId`)
+- [x] Delete address with primary reassignment (`DELETE /api/v1/users/addresses/:addressId`)
+- [ ] Admin user management (list, suspend, role changes)
+
+## Categories
+
+- [x] List categories with pagination, sort, search, status filter (`GET /api/v1/categories`)
+- [x] Get category by ObjectId or slug (`GET /api/v1/categories/:identifier`)
+- [x] Get products in category by slug (`GET /api/v1/categories/:slug/products`)
+- [x] Create category — admin only (`POST /api/v1/categories`)
+- [x] Update category — admin only (`PATCH /api/v1/categories/:id`)
+- [x] Soft-delete (archive) category — admin only (`DELETE /api/v1/categories/:id`)
+- [x] Restore archived category — admin only (`PATCH /api/v1/categories/:id/restore`)
+- [x] Auto-generated slug from name
+
+## Products
+
+- [x] Create product — admin only (`POST /api/v1/products`)
+- [x] List active products with pagination, sort, search, filters (`GET /api/v1/products`)
+- [x] Get product by ObjectId or slug (`GET /api/v1/products/:identifier`)
+- [x] Update product with field whitelist — admin only (`PATCH /api/v1/products/:id`)
+- [x] Archive product — admin only (`DELETE /api/v1/products/:id`)
+- [x] Restore product — admin only (`PATCH /api/v1/products/:id/restore`)
+- [x] SKU uniqueness enforcement
+- [x] Category reference validation on create
+- [x] Text search on `name` and `brand`
+- [x] Virtuals: `primaryImage`, `availableStock`, `inStock`, `lowStock`, `inventoryStatus`
+
+## Product Images
+
+- [x] Upload up to 10 images per product — admin only (`POST /api/v1/products/:id/images`)
+- [x] Delete image and file from disk — admin only (`DELETE /api/v1/products/:id/images/:filename`)
+- [x] Set primary image — admin only (`PATCH /api/v1/products/:id/images/primary`)
+- [x] Reorder gallery — admin only (`PATCH /api/v1/products/:id/images/reorder`)
+- [x] Update alt text — admin only (`PATCH /api/v1/products/:id/images/alt-text`)
+- [x] Local disk storage under `uploads/products/`
+- [x] MIME validation (JPEG, PNG, WEBP) and 5 MB size limit
+- [ ] Cloudinary / S3 object storage
+
+## Inventory
+
+- [x] Admin stock adjustment with reason enum (`PATCH /api/v1/inventory/:productId/adjust`)
+- [x] Inventory history per product (`GET /api/v1/inventory/:productId/history`)
+- [x] Inventory summary with virtual stock state (`GET /api/v1/inventory/:productId/summary`)
+- [x] Atomic `reserveStock` — used by cart add/update
+- [x] Atomic `releaseStock` — used by cart remove/clear/update decrease
+- [x] Atomic `commitStock` — used by order creation
+- [x] `InventoryHistory` audit trail on manual adjustments
+- [ ] Reservation TTL / abandoned-cart cleanup job
+- [ ] Inventory adjustment wrapped in transactions
+
+## Cart
+
+- [x] Add item with price snapshot and stock reservation (`POST /api/v1/cart/items`)
+- [x] Get cart with populated products (`GET /api/v1/cart`)
+- [x] Update item quantity with reservation delta (`PATCH /api/v1/cart/items/:productId`)
+- [x] Remove item and release reservation (`DELETE /api/v1/cart/items/:productId`)
+- [x] Clear cart and release all reservations (`DELETE /api/v1/cart`)
+- [x] One cart per user (unique index on `user`)
+- [x] MongoDB transactions for cart + inventory writes
+- [x] Virtuals: `totalItems`, `subtotal`
+
+## Wishlist
+
+- [x] Get wishlist with populated products (`GET /api/v1/wishlist`)
+- [x] Add product — idempotent if already present (`POST /api/v1/wishlist/:productId`)
+- [x] Remove product (`DELETE /api/v1/wishlist/:productId`)
+- [x] One wishlist per user (unique index on `user`)
+- [x] Virtual: `totalItems`
+
+## Orders
+
+- [x] Order model with line-item snapshots, shipping address snapshot, status enums
+- [x] Create order from cart — commits stock, clears cart, uses transaction (`POST /api/v1/orders`)
+- [x] List user's orders (`GET /api/v1/orders`)
+- [x] Get order detail (`GET /api/v1/orders/:orderId`)
+- [ ] **Routes not mounted** — broken import in `app.js` prevents server startup
+- [ ] **Get order by ID has swapped service arguments** in controller
+- [ ] Admin order management (list all, update status)
+- [ ] Order status transition workflow
+- [ ] Payment capture / webhook handling
+- [ ] Shipping cost and tax calculation (hardcoded to `0`)
+- [ ] Order confirmation email
+
+## Email
+
+- [x] SMTP via Nodemailer (`providers/email.provider.js`)
+- [x] Verification email with HTML template
+- [x] Password reset email with HTML template
+- [x] SMTP connection verified at startup
+
+## Infrastructure & Cross-Cutting
+
+- [x] Health check (`GET /health`)
+- [x] Global API rate limit (300 req / 15 min)
+- [x] Helmet, HPP, compression, CORS with credentials
+- [x] Static serving of uploaded files (`/uploads`)
+- [x] Global 404 handler via `AppError`
+- [x] Centralized error middleware
+- [ ] Automated test suite (`npm test` is a placeholder)
+- [ ] CI/CD pipeline
+- [ ] Structured logging / observability
+
+## Frontend
+
+- [x] Vite + React 19 + Tailwind CSS project scaffold
+- [x] Dependencies: `axios`, `react-router-dom` (installed, unused)
+- [ ] Catalog, auth, cart, wishlist, or checkout UI
+- [ ] API client layer
+
+---
+
+# Architecture Overview
+
+The backend uses a **layered, domain-sliced** architecture. Each business domain (auth, products, cart, etc.) owns its route file, controller, service, model, and validators.
 
 ```text
-HTTP request
-  -> routes
-  -> middleware / validators
-  -> controllers
-  -> services
-  -> models / providers
-  -> JSON response
+HTTP Request
+    │
+    ▼
+┌─────────────┐
+│   Routes    │  Declare paths, HTTP verbs, middleware chain
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│ Middleware  │  auth (protect/authorize), validate, upload, rate limits
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│ Controllers │  Extract req data, call services, set status/cookies
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│  Services   │  Business rules, DB orchestration, throw AppError
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│   Models    │  Mongoose schemas, indexes, hooks, virtuals
+└─────────────┘
 ```
 
-### Layer Responsibilities
+## Why This Architecture
 
-| Layer | Folder | Responsibility |
-|-------|--------|----------------|
-| Routes | `back-end/routes/` | Define HTTP methods, paths, middleware order, validators, auth/role requirements. |
-| Controllers | `back-end/controllers/` | Thin HTTP adapters. Extract request values, call services, set response status/envelope, set/clear cookies. |
-| Services | `back-end/services/` | Business rules, database orchestration, cross-module workflows, expected `AppError` failures. |
-| Models | `back-end/models/` | Mongoose schemas, indexes, hooks, virtuals, instance methods, relationships. |
-| Validators | `back-end/validators/` | `express-validator` rule chains for request shape and format. |
-| Middleware | `back-end/middleware/` | Authentication, authorization, validation aggregation, upload handling, global errors. |
-| Constants | `back-end/constants/` | Shared enum values and limits. |
-| Utils | `back-end/utils/` | Stateless helpers for errors, JWTs, passwords, query parsing, files, tokens. |
-| Providers | `back-end/providers/` | External adapters such as SMTP and local storage. |
-| Templates | `back-end/templates/` | HTML email templates. |
+| Decision | Rationale |
+|----------|-----------|
+| Thin controllers | Keeps HTTP handling separate from business rules; services remain testable and reusable |
+| Services own logic | Cross-domain orchestration (cart + inventory + orders) lives in one place without bloating controllers |
+| Validators at route layer | Input shape is rejected before any service call; consistent 400 responses via `validate` middleware |
+| `AppError` for expected failures | Distinguishes operational errors (404, 409) from unexpected crashes in the global handler |
+| Constants for enums | Status values (`PRODUCT_STATUS`, `ORDER_STATUS`, etc.) are centralized to prevent string drift |
+| Domain file naming | `product.routes.js`, `product.controller.js`, `product.service.js`, `product.model.js` — predictable navigation |
 
-### Architectural Rules
-
-- Keep controllers thin. Put decisions and workflows in services.
-- Do not query Mongoose models from controllers.
-- Do not put business rules in route files.
-- Use validators for input shape; use services for database-backed business checks.
-- Use `AppError` for expected operational errors.
-- Use constants for roles, statuses, reasons, and limits.
-- Preserve the existing route/controller/service/model pattern for all new modules.
-- Add new commerce workflows as service orchestration, not as model hooks.
-- Use MongoDB transactions for future money, order, inventory, and payment workflows.
-
-## Current Folder Structure
+## Application Bootstrap
 
 ```text
-back-end/
-|-- app.js
-|-- server.js
-|-- config/
-|-- constants/
-|-- controllers/
-|-- middleware/
-|-- models/
-|-- providers/
-|-- routes/
-|-- services/
-|-- templates/
-|-- utils/
-`-- validators/
+server.js
+  ├── dotenv
+  ├── connectDB()          → config/db.js (MONGO_URI)
+  ├── emailProvider.verifyConnection()
+  └── app.listen(PORT)
 
-front-end/
-|-- public/
-`-- src/
-
-docs/
-|-- API_REFERENCE.md
-|-- DATABASE_SCHEMA.md
-|-- ROADMAP.md
-|-- PROJECT_OVERVIEW.md
-`-- module-specific documentation
+app.js
+  ├── Security middleware (helmet, hpp, compression, rate limits, cors)
+  ├── Body parsers (json, urlencoded, cookieParser)
+  ├── Static /uploads
+  ├── Route mounts under /api/v1/*
+  ├── 404 → AppError
+  └── errorHandler middleware
 ```
 
-See `docs/FOLDER_STRUCTURE.md` for the full audited file tree.
+## Request Flow Example — Add to Cart
 
-## Current Backend Modules
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Route as cart.routes.js
+    participant Auth as protect middleware
+    participant Val as validate middleware
+    participant Ctrl as cart.controller.js
+    participant Svc as cart.service.js
+    participant Inv as inventory.service.js
+    participant DB as MongoDB
 
-| Module | Status | Current capability |
-|--------|--------|--------------------|
-| Authentication | Implemented | Register, login, logout, current user, email verification, forgot password, reset password. Uses cookie-based JWT auth. Login requires verified email. |
-| Users | Implemented | Profile read/update, phone field support, address CRUD, change password. |
-| Categories | Implemented | CRUD, slug generation, status, soft delete, restore, products-by-category. |
-| Products | Implemented | CRUD, active public catalog, soft delete, restore, status lifecycle, image gallery, primary image, reorder, alt text, inventory fields. |
-| Inventory | Partially implemented | Adjustment, history, summary, atomic reservation, release, atomic commit primitive. Missing order integration and reservation TTL. |
-| Cart | Implemented with limitations | Add, get, update quantity, remove, clear, price snapshots, inventory reservation/release. No guest cart or reservation expiration. |
-| Wishlist | Implemented with limitation | Get, add, remove, product validation. `GET /wishlist` currently has an incorrect `productId` validator. |
+    Client->>Route: POST /api/v1/cart/items
+    Route->>Auth: verify JWT cookie
+    Auth->>Val: check body (productId, quantity)
+    Val->>Ctrl: addItemToCart
+    Ctrl->>Svc: addItemToCart(userId, productId, qty)
+    Svc->>DB: startSession + withTransaction
+    Svc->>Inv: reserveStock(productId, qty, session)
+    Inv->>DB: findOneAndUpdate (atomic availability check)
+    Svc->>DB: save cart with priceSnapshot
+    Svc-->>Ctrl: populated cart
+    Ctrl-->>Client: 200 { success, data }
+```
 
-## Authentication Model
+---
 
-Implemented:
+# Core Engineering Standards
 
-- JWT access token stored in an HTTP-only cookie named `accessToken`.
-- JWT expiry controlled by `JWT_EXPIRES_IN`, default `1h`.
-- Cookie lifetime controlled by `COOKIE_EXPIRES_IN` in minutes.
-- `protect` middleware reads cookie, verifies JWT, reloads user from DB, checks `status === active`.
-- `authorize` middleware enforces admin-only routes.
-- Registration generates hashed email verification token.
-- Login is blocked until `isEmailVerified` is true.
-- Forgot/reset password uses hashed reset token.
-- Auth routes are rate limited.
+## Error Handling Strategy
 
-Missing or planned:
+- **`AppError`** (`utils/app-error.util.js`) — operational errors with `statusCode`, optional `errors[]`, and `isOperational: true`.
+- **Services throw `AppError`** for expected failures (not found, conflict, insufficient stock).
+- **Global error middleware** (`middleware/error.middleware.js`) catches:
+  - `AppError` → returns `{ success: false, status: 'error', message, errors }` with correct HTTP status
+  - Multer errors → normalized to 400
+  - Unexpected errors → 500 with generic message (details logged to console)
+- **404** — unmatched routes forward to `AppError('Route … not found', 404)`.
 
-- Refresh tokens.
-- Session rotation.
-- Server-side JWT revocation.
-- Session invalidation after password reset/change.
-- Email verification resend endpoint.
-- Phone verification API.
-- MFA and admin user management.
+## Validation Strategy
 
-## Database Model Summary
+- **express-validator** chains defined per domain in `validators/*.validator.js`.
+- **`validate` middleware** (`middleware/validate.middleware.js`) converts validation failures into `AppError('Validation failed', 400, formattedErrors)`.
+- Validators cover request **body**, **params**, and (where used) **query**.
+- Mongoose schema validation provides a second layer at persistence (email format, enums, min/max).
 
-| Collection | Model | Purpose |
-|------------|-------|---------|
-| `users` | `User` | Accounts, credentials, roles/status, profile, addresses, verification/reset token hashes |
-| `categories` | `Category` | Product taxonomy |
-| `products` | `Product` | Catalog, pricing, status, inventory quantities, embedded images |
-| `inventoryhistories` | `InventoryHistory` | Admin stock adjustment audit trail |
-| `carts` | `Cart` | One authenticated cart per user with price-snapshot line items |
-| `wishlists` | `Wishlist` | One wishlist per user with product references |
+## Constants Strategy
 
-See `docs/DATABASE_SCHEMA.md` for exact fields, virtuals, indexes, constraints, and relationships.
+Domain enums live in `back-end/constants/`:
 
-## Current API Surface
+| File | Exports |
+|------|---------|
+| `user.constants.js` | `USER_ROLES`, `USER_STATUS` |
+| `category.constants.js` | `CATEGORY_STATUS` |
+| `product.constants.js` | `PRODUCT_STATUS` |
+| `inventory.constants.js` | `INVENTORY_REASONS`, `INVENTORY_STATUS` |
+| `order.constants.js` | `ORDER_STATUS`, `PAYMENT_STATUS` |
+| `upload.constants.js` | `ALLOWED_IMAGE_TYPES`, `MAX_IMAGE_SIZE`, `MAX_PRODUCT_IMAGES` |
 
-Base API prefix: `/api/v1`
+Validators and models import from constants rather than hardcoding strings.
 
-| Module | Base path |
-|--------|-----------|
-| Auth | `/api/v1/auth` |
-| Users | `/api/v1/users` |
-| Categories | `/api/v1/categories` |
-| Products | `/api/v1/products` |
-| Inventory | `/api/v1/inventory` |
-| Cart | `/api/v1/cart` |
-| Wishlist | `/api/v1/wishlist` |
+## Service Layer Strategy
 
-See `docs/API_REFERENCE.md` for endpoint-level request, validation, auth, response, and error details.
+- Controllers never query models directly — they delegate to services.
+- Services use **field whitelists** for updates (e.g., `user.service.js`, `product.service.js`, `category.service.js`).
+- **Ownership** is derived from `req.user` in controllers, never from request body.
+- Cross-service calls are explicit imports (e.g., `cart.service.js` → `inventory.service.js`, `order.service.js` → `inventory.service.js`).
+- **MongoDB transactions** (`session.withTransaction`) are used in cart and order flows where inventory and document writes must be atomic.
 
-## Coding Standards
+## API Response Strategy
 
-### Backend Standards
-
-- Use CommonJS modules, matching the existing codebase.
-- Name files by domain and layer: `product.routes.js`, `product.controller.js`, `product.service.js`, `product.model.js`.
-- Export named service/controller functions where the existing pattern does.
-- Keep response envelopes consistent:
+**Success:**
 
 ```json
 {
   "success": true,
-  "message": "Optional message",
+  "message": "Optional human-readable message",
   "data": {}
 }
 ```
 
-- Throw `AppError` from services for expected errors.
-- Add route validators for request bodies, params, and query params where practical.
-- Keep ownership derived from `req.user`, never from request body.
-- Use service-level whitelists for update operations.
-- Prefer constants over hardcoded status/role/reason strings.
-- Add indexes for frequently filtered fields in new models.
-- Add timestamps to new main schemas.
-- Include virtuals in JSON when API responses need computed values.
+**Error:**
 
-### Security Standards
-
-- Keep JWTs in HTTP-only cookies for browser auth.
-- Keep CORS origin restricted to `FRONTEND_URL`.
-- Do not return password or token hash fields.
-- Use generic credential/reset responses where enumeration is a risk.
-- Admin mutations must use `protect` and `authorize(USER_ROLES.ADMIN)`.
-- Payment and webhook features must use idempotency and signature verification.
-- Future checkout/order/payment flows must use transactions.
-
-### Documentation Standards
-
-- Do not document features that do not exist as implemented.
-- Clearly label features as implemented, partially implemented, planned, or not started.
-- Update `API_REFERENCE.md` whenever routes change.
-- Update `DATABASE_SCHEMA.md` whenever models change.
-- Update `ROADMAP.md` whenever feature status changes.
-
-## Implementation Goals
-
-### Short-Term Goals
-
-1. Fix the wishlist `GET /api/v1/wishlist` validator bug.
-2. Add `.env.example`.
-3. Add automated tests for auth, users, products, inventory, cart, and wishlist.
-4. Add route param validators for product/category/inventory/cart paths.
-5. Add MongoDB transactions around cart and inventory reservation workflows.
-6. Add reservation TTL fields and cleanup jobs.
-
-### Commerce MVP Goals
-
-1. Implement Orders.
-2. Implement Checkout.
-3. Connect checkout to inventory `commitStock`.
-4. Integrate one payment provider.
-5. Add payment webhooks with idempotency.
-6. Add order status history.
-7. Add basic fulfillment states.
-8. Build customer frontend flows for auth, catalog, product detail, cart, wishlist, checkout, and order history.
-9. Build admin flows for catalog, inventory, and order management.
-
-### Production Goals
-
-1. Move product images from local disk to Cloudinary/S3 or equivalent.
-2. Add structured logging, request IDs, metrics, and alerts.
-3. Add CI/CD with tests, linting, build, and deployment stages.
-4. Add staging environment.
-5. Add database backup/restore procedures.
-6. Add operational runbooks.
-7. Add stronger session security: refresh token rotation, revocation, and optional admin MFA.
-
-## Prioritized Future Roadmap
-
-| Priority | Feature | Status | Why it matters |
-|----------|---------|--------|----------------|
-| 1 | Fix wishlist GET validator | Planned | Current route validates a missing param and may block normal wishlist reads. |
-| 2 | Automated tests | Planned | Existing backend has enough business logic that regression protection is now essential. |
-| 3 | `.env.example` | Planned | Reduces onboarding friction and helps LLM/dev agents infer required configuration. |
-| 4 | Param validation hardening | Planned | Prevents invalid IDs from reaching services and Mongoose. |
-| 5 | Cart/inventory transactions | Planned | Prevents reservation/cart desynchronization under failure. |
-| 6 | Reservation TTL and cleanup | Planned | Prevents abandoned carts from holding stock forever. |
-| 7 | Orders module | Not started | Creates the durable purchase record and unlocks checkout/payment/fulfillment. |
-| 8 | Checkout module | Not started | Coordinates cart validation, addresses, stock commit, order creation, and payment setup. |
-| 9 | Payment integration | Not started | Required for revenue-generating commerce. |
-| 10 | Payment webhooks/idempotency | Not started | Required for reliable payment state transitions. |
-| 11 | Customer frontend | Not started | Makes existing backend usable by shoppers. |
-| 12 | Admin order management | Not started | Required for operations after checkout launches. |
-| 13 | Fulfillment/shipping | Not started | Required for post-payment operations. |
-| 14 | Returns/refunds | Not started | Required for complete commerce support. |
-| 15 | Coupons/promotions | Not started | Useful after checkout/order pricing is stable. |
-| 16 | Reviews/ratings | Not started | Best after orders exist for verified-purchase logic. |
-| 17 | Analytics/admin dashboard | Not started | Needs order/payment data to be meaningful. |
-| 18 | Production storage/observability/CI | Not started | Required before real deployment. |
-
-## Recommended Future Module Pattern
-
-New backend modules should follow this structure:
-
-```text
-back-end/
-|-- routes/order.routes.js
-|-- controllers/order.controller.js
-|-- services/order.service.js
-|-- models/order.model.js
-|-- validators/order.validator.js
-`-- constants/order.constants.js
+```json
+{
+  "success": false,
+  "status": "error",
+  "message": "Error description",
+  "errors": []
+}
 ```
 
-Mount new routers in `app.js` under `/api/v1/{resource}`.
+Validation errors populate `errors` with `{ field, message }` objects. HTTP status codes follow conventional REST semantics (201 for create, 401/403 for auth, 404 for missing resources, 409 for conflicts).
 
-Controllers should remain thin:
+## Authentication Strategy
+
+- JWT access token generated on login (`utils/jwt.util.js`).
+- Token stored in **`accessToken` HTTP-only cookie** (`secure` in production, `sameSite: strict`).
+- `protect` middleware reads cookie, verifies JWT, loads user, checks `USER_STATUS.ACTIVE`.
+- `authorize(...roles)` gates admin-only routes.
+
+---
+
+# Current Database Collections
+
+Mongoose model names and typical MongoDB collection names:
+
+| Collection | Model | Purpose |
+|------------|-------|---------|
+| `users` | `User` | Accounts, hashed passwords, roles/status, embedded addresses, verification/reset token hashes |
+| `categories` | `Category` | Product taxonomy with slug, status, soft-delete flag |
+| `products` | `Product` | Catalog items — pricing, SKU, stock/reserved quantities, embedded image gallery, category ref |
+| `inventoryhistories` | `InventoryHistory` | Audit log of admin stock adjustments |
+| `carts` | `Cart` | One cart per user; line items with `priceSnapshot` |
+| `wishlists` | `Wishlist` | One wishlist per user; array of product ObjectId refs |
+| `orders` | `Order` | Placed orders with line-item snapshots, address snapshot, status enums |
+
+### Key Relationships
 
 ```text
-controller receives req -> calls service -> returns envelope
+User ──1:1── Cart
+User ──1:1── Wishlist
+User ──1:N── Order
+User ──1:N── Address (embedded subdocuments)
+
+Category ──1:N── Product
+Product ──1:N── InventoryHistory (via product ref)
+
+Cart.items[].product ──N:1── Product
+Wishlist.products[] ──N:1── Product
+Order.items[].product ──N:1── Product
 ```
 
-Services should own orchestration:
+See `docs/DATABASE_SCHEMA.md` for field-level detail.
 
-```text
-service validates domain state -> writes models in transaction -> throws AppError on expected failure
-```
+---
 
-## Commerce Workflow Target
+# Current API Surface
 
-The intended future checkout workflow is:
+Base prefix: **`/api/v1`**
 
-```text
-Cart item added
-  -> reserve stock
-  -> checkout validates cart and address
-  -> create order snapshot
-  -> create payment intent
-  -> payment webhook confirms payment
-  -> commit reserved stock
-  -> clear cart
-  -> mark order paid/processing
-```
+| Module | Base Path | Auth | Notes |
+|--------|-----------|------|-------|
+| Health | `GET /health` | No | Server liveness |
+| Auth | `/api/v1/auth` | Mixed | Register, login, logout, me, verify-email, forgot/reset password |
+| Users | `/api/v1/users` | Yes | Profile, password, addresses |
+| Categories | `/api/v1/categories` | Mixed | Public reads; admin writes |
+| Products | `/api/v1/products` | Mixed | Public reads; admin CRUD + images |
+| Inventory | `/api/v1/inventory` | Admin | Adjust, history, summary |
+| Cart | `/api/v1/cart` | Yes | Full cart lifecycle |
+| Wishlist | `/api/v1/wishlist` | Yes | Get, add, remove |
+| Orders | `/api/v1/orders` | Yes | Create, list, detail — **not currently reachable** (boot failure) |
 
-Critical rules:
+### Endpoint Summary by Module
 
-- Never trust client totals.
-- Snapshot product, price, address, and payment details into the order.
-- Use transactions for order/inventory/cart changes.
-- Use idempotency keys for checkout and payment operations.
-- Release reservations if checkout/payment expires or fails.
+**Auth** — `POST /register`, `POST /login`, `GET /me`, `POST /logout`, `POST /verify-email`, `POST /forgot-password`, `POST /reset-password`
 
-## Known Technical Debt
+**Users** — `GET /me`, `PATCH /me`, `PATCH /change-password`, `GET /addresses`, `POST /addresses`, `PATCH /addresses/:addressId`, `DELETE /addresses/:addressId`
 
-- `GET /api/v1/wishlist` uses a validator that expects `productId`.
-- Cart/inventory writes are not fully transactional.
-- Reservation TTL and cleanup jobs do not exist.
-- Product stock can be updated through product PATCH without inventory history.
-- No automated tests.
-- No `.env.example`.
-- No production-safe file storage.
-- No structured logging or observability.
-- No refresh tokens or server-side session revocation.
-- No order/payment/checkout modules.
+**Categories** — `GET /`, `GET /:identifier`, `GET /:slug/products`, `POST /`, `PATCH /:id`, `DELETE /:id`, `PATCH /:id/restore`
 
-## LLM Implementation Guidance
+**Products** — `GET /`, `GET /:identifier`, `POST /`, `PATCH /:id`, `DELETE /:id`, `PATCH /:id/restore`, `POST /:id/images`, `DELETE /:id/images/:filename`, `PATCH /:id/images/primary`, `PATCH /:id/images/reorder`, `PATCH /:id/images/alt-text`
 
-When using this repository as context for an LLM:
+**Inventory** — `PATCH /:productId/adjust`, `GET /:productId/history`, `GET /:productId/summary`
 
-- Treat `docs/API_REFERENCE.md` as the source of truth for routes.
-- Treat `docs/DATABASE_SCHEMA.md` as the source of truth for models.
-- Preserve the existing layered architecture.
-- Do not invent existing features; check the route, service, and model first.
-- Prefer narrow, vertical feature implementation over broad rewrites.
-- For new commerce modules, implement model, constants, validators, service, controller, routes, docs, and tests together.
-- Prioritize correctness around inventory and money over speed of feature delivery.
+**Cart** — `POST /items`, `GET /`, `PATCH /items/:productId`, `DELETE /items/:productId`, `DELETE /`
+
+**Wishlist** — `GET /`, `POST /:productId`, `DELETE /:productId`
+
+**Orders** — `POST /`, `GET /`, `GET /:orderId`
+
+Full request/response documentation: `docs/API_REFERENCE.md`.
+
+---
+
+# Completed Development Phases
+
+Based on implemented code and git-visible module structure:
+
+| Phase | Scope | Key Deliverables |
+|-------|-------|------------------|
+| **Phase 0 — Foundation** | Express app, MongoDB, middleware stack | `app.js`, `server.js`, `config/db.js`, rate limiting, CORS, Helmet, error handler, health check |
+| **Phase 1 — Authentication** | Registration, login, JWT cookies, email flows | Auth routes/service, `User` model, email templates, token hashing |
+| **Phase 2 — User Management** | Profile, password, addresses | User routes/service, embedded address subdocuments with primary logic |
+| **Phase 3 — Categories** | Taxonomy CRUD | Category model with slug generation, soft-delete/restore, public listing |
+| **Phase 4 — Product Management** | Catalog CRUD, search, pagination | Product model, `ApiQuery` utility, admin lifecycle, public active catalog |
+| **Phase 5 — Product Images** | Gallery management | Multer upload, local storage provider, primary/reorder/alt-text operations |
+| **Phase 6 — Inventory** | Stock tracking and reservations | `stockQuantity` / `reservedQuantity`, adjustment history, atomic reserve/release/commit |
+| **Phase 7 — Cart** | Shopping cart with reservations | Price snapshots, transactional cart + inventory writes |
+| **Phase 8 — Wishlist** | Save-for-later | One wishlist per user, add/remove with product validation |
+| **Phase 9 — Orders** | Order placement from cart | Order model, transactional create with `commitStock` — **implementation incomplete at integration layer** |
+
+**Not started as a phase:** frontend UI, payments, admin dashboard, reviews, coupons, analytics, Cloudinary migration.
+
+---
+
+# Technical Debt & Improvement Opportunities
+
+## High Priority
+
+| Issue | Impact | Evidence |
+|-------|--------|----------|
+| **Broken order routes import** | Server cannot start | `app.js` line 17: `require('./order.routes')` — file is at `./routes/order.routes.js`. Verified: `node -e "require('./back-end/app')"` throws `Cannot find module './order.routes'` |
+| **Swapped arguments in get order** | Order detail returns wrong/no result | `order.controller.js` passes `(userId, orderId)` but `order.service.js#getOrderById` expects `(orderId, userId)` |
+| **No automated tests** | Regressions undetected in inventory/cart/order flows | `package.json`: `"test": "echo \"Error: no test specified\" && exit 1"` |
+| **No reservation TTL** | Abandoned carts hold stock indefinitely | `reserveStock` has no expiration metadata or cleanup job |
+
+## Medium Priority
+
+| Issue | Impact | Evidence |
+|-------|--------|----------|
+| **Local disk image storage** | Not suitable for multi-instance or cloud deploy | Images stored under `uploads/products/`, served via `express.static` |
+| **Orders lack payment integration** | Orders created with `paymentStatus: pending` forever | No payment provider, webhooks, or status update endpoints |
+| **Shipping/tax hardcoded to zero** | Incorrect order totals for real commerce | `order.service.js`: `shippingCost = 0`, `tax = 0` |
+| **No admin order management** | Admins cannot view or update order lifecycle | Only customer-scoped order routes exist |
+| **Manual inventory adjust not transactional** | Product save and history insert are separate writes | `inventory.service.js#adjustInventory` — no session |
+| **Outdated internal roadmap docs** | `docs/ROADMAP.md` and `docs/FUTURE_ROADMAP.md` claim orders/transactions/.env.example are missing — code has evolved | Orders module, cart transactions, and `.env.example` now exist |
+| **No refresh token / session revocation** | Stolen cookies valid until JWT expiry | Single access token cookie only; password reset does not invalidate sessions |
+
+## Low Priority
+
+| Issue | Impact | Evidence |
+|-------|--------|----------|
+| **Phone verification scaffolding unused** | Dead code on User model | `generatePhoneVerificationToken` exists; no routes or service |
+| **Typo in order error message** | Minor UX | `order.service.js`: `"Product unavailabel"` |
+| **Console logging in production path** | No structured observability | `error.middleware.js` uses `console.log` / `console.error` |
+| **No CI/CD** | Manual deploy only | No GitHub Actions or similar config in repo |
+| **`upload.middlware.js` typo** | Naming inconsistency | Filename misspells "middleware" |
+| **Frontend dependencies unused** | Dead weight until UI built | `axios`, `react-router-dom` installed but not imported |
+
+---
+
+# Future Roadmap
+
+The following are **planned future work** — not present in the codebase today.
+
+## Commerce Completion
+
+| Module | Description | Depends On |
+|--------|-------------|------------|
+| **Orders (integration fix)** | Fix import path and controller bug; add admin order APIs and status transitions | Existing order module |
+| **Checkout** | Dedicated checkout orchestration (address selection, totals, idempotency) | Orders, cart, addresses |
+| **Payments** | Stripe (or similar) payment intent, webhook verification, `paymentStatus` updates | Orders |
+| **Shipping / Fulfillment** | Shipping cost rules, carrier integration, tracking | Orders, payments |
+| **Returns / Refunds** | Return requests, refund processing | Orders, payments |
+
+## Customer Experience
+
+| Module | Description |
+|--------|-------------|
+| **Frontend catalog** | Product listing, detail pages, category navigation |
+| **Frontend auth** | Register, login, verify-email, password reset UI |
+| **Frontend cart & wishlist** | API-integrated shopping flows |
+| **Reviews & ratings** | Product reviews (optionally verified purchase) |
+| **Coupons / promotions** | Discount codes applied at cart/checkout |
+| **Abandoned cart recovery** | Email reminders after reservation TTL |
+
+## Admin & Operations
+
+| Module | Description |
+|--------|-------------|
+| **Admin dashboard** | UI for products, categories, inventory, orders |
+| **Analytics** | Sales metrics, inventory reports (requires order/payment data) |
+| **Admin user management** | Suspend users, role assignment |
+| **Cloudinary / S3 migration** | Replace local disk uploads for production |
+| **Structured logging & monitoring** | Replace console logs; add metrics/tracing |
+| **CI/CD pipeline** | Automated test, lint, build, deploy |
+| **Test suite** | Integration tests for auth, cart, inventory, orders |
+
+## Authentication Enhancements
+
+| Item | Description |
+|------|-------------|
+| Refresh tokens | Long-lived sessions with short-lived access tokens |
+| Phone verification | API routes using existing model methods |
+| Resend verification email | Endpoint for unverified users |
+| Session invalidation | Invalidate JWT on password change/reset |
+
+---
+
+# Summary
+
+The MERN Sports E-commerce Platform has a **mature backend foundation** covering authentication, user profiles, category/product catalog, local image uploads, inventory with atomic reservations, shopping cart, wishlist, and an order module with transactional stock commit. The architecture consistently applies Route → Controller → Service → Model separation with `AppError`-driven error handling, express-validator input checks, and centralized constants.
+
+**Critical blocker:** the server currently **cannot boot** because `app.js` imports order routes from the wrong path (`./order.routes` instead of `./routes/order.routes`). Once fixed, orders also need a controller argument-order bug corrected before order detail works.
+
+The **frontend is a placeholder** — React/Vite/Tailwind are configured but no storefront UI exists. **Payments, fulfillment, admin dashboard, reviews, coupons, and analytics** are not implemented; they belong on the future roadmap.
+
+For a new developer, start with `back-end/server.js` → `app.js`, pick a domain (e.g., `routes/cart.routes.js`), trace through its controller and service, and cross-reference `docs/API_REFERENCE.md` and `docs/DATABASE_SCHEMA.md` for endpoint and schema detail.

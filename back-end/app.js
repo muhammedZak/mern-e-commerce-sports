@@ -14,7 +14,7 @@ const categoryRoutes = require('./routes/category.routes');
 const inventoryRoutes = require('./routes/inventory.routes');
 const cartRoutes = require('./routes/cart.routes');
 const wishlistRoutes = require('./routes/wishlist.routes');
-const orderRoutes = require('./order.routes');
+const orderRoutes = require('./routes/order.routes');
 
 const errorHandler = require('./middleware/error.middleware');
 const AppError = require('./utils/app-error.util');
