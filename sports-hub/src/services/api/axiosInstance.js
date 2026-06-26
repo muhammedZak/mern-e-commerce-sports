@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { setupInterceptors } from './interceptors';
 
 const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -9,6 +10,14 @@ const axiosInstance = axios.create({
   },
 
   withCredentials: true,
+});
+
+setupInterceptors(axiosInstance, {
+  getAccessToken: () => null,
+
+  onUnauthorized: () => {
+    console.warn('Unauthorized request');
+  },
 });
 
 export default axiosInstance;

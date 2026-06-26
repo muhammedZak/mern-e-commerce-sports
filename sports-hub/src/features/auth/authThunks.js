@@ -5,12 +5,12 @@ export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async (credentials, thunkAPI) => {
     try {
-      const data = await authService.login(credentials);
+      const response = await authService.login(credentials);
 
-      return data;
+      return response.data;
     } catch (error) {
       return thunkAPI.rejectWithValue(
-        error.response?.data?.message || 'Login failed',
+        error.response?.data?.message || error.message || 'Login failed',
       );
     }
   },
