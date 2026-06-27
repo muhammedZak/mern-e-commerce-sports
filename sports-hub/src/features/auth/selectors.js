@@ -1,11 +1,9 @@
-export const selectAuth = (state) => state.auth;
+export const selectCurrentUser = (state) => state.auth.user;
 
-export const selectUser = (state) => state.auth.user;
+export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
 
-export const selectAccessToken = (state) => state.auth.accessToken;
+export const selectIsInitialized = (state) => state.auth.isInitialized;
 
 export const selectAuthStatus = (state) => state.auth.status;
 
 export const selectAuthError = (state) => state.auth.error;
-
-export const selectIsAuthenticated = (state) => Boolean(state.auth.accessToken);

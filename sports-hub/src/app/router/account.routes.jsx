@@ -11,14 +11,20 @@ export const accountRoutes = [
     element: <ProtectedRoute />,
     children: [
       {
-        element: <AccountLayout />,
-        children: [
-          {
-            index: true,
-            element: <DashboardPage />,
-          },
-        ],
+        index: true,
+        element: <DashboardPage />,
       },
     ],
+    // children: [
+    //   {
+    //     element: <AccountLayout />,
+    //     children: [
+    //       {
+    //         index: true,
+    //         element: <DashboardPage />,
+    //       },
+    //     ],
+    //   },
+    // ],
   },
 ];

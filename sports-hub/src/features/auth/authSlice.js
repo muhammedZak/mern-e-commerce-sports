@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 import { REQUEST_STATUS } from '@/constants/requestStatus';
-import { loginUser } from './authThunks';
+import { getCurrentUser, loginUser } from './authThunks';
 
 const initialState = {
   user: null,
@@ -17,7 +17,7 @@ const authSlice = createSlice({
   reducers: {
     logout(state) {
       state.user = null;
-      state.accessToken = null;
+      state.isAuthenticated = false;
       state.status = REQUEST_STATUS.IDLE;
       state.error = null;
     },
@@ -38,15 +38,34 @@ const authSlice = createSlice({
       })
 
       .addCase(loginUser.fulfilled, (state, action) => {
-        state.status = REQUEST_STATUS.SUCCEEDED;
         state.user = action.payload.user;
-        state.accessToken = action.payload.accessToken;
+        state.isAuthenticated = true;
         state.error = null;
+        state.status = REQUEST_STATUS.SUCCEEDED;
       })
 
       .addCase(loginUser.rejected, (state, action) => {
         state.status = REQUEST_STATUS.FAILED;
         state.error = action.payload;
+      })
+
+      .addCase(getCurrentUser.pending, (state) => {
+        state.status = REQUEST_STATUS.LOADING;
+      })
+
+      .addCase(getCurrentUser.fulfilled, (state, action) => {
+        state.user = action.payload.data;
+        state.isAuthenticated = true;
+        state.isInitialized = true;
+        state.error = null;
+        state.status = REQUEST_STATUS.SUCCEEDED;
+      })
+
+      .addCase(getCurrentUser.rejected, (state) => {
+        state.status = REQUEST_STATUS.FAILED;
+        state.user = null;
+        state.isAuthenticated = false;
+        state.isInitialized = true;
       });
   },
 });

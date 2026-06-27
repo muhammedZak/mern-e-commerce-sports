@@ -18,6 +18,7 @@ export const PATHS = {
     register: '/register',
     forgotPassword: '/forgot-password',
     resetPassword: '/reset-password',
+    checkEmail: '/check-email',
     verifyEmail: '/verify-email',
     verifyPhone: '/verify-phone',
   },

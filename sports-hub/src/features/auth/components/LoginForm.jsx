@@ -1,4 +1,3 @@
-import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDispatch, useSelector } from 'react-redux';
@@ -12,6 +11,7 @@ import { loginUser } from '../authThunks';
 
 import { selectAuthError, selectAuthStatus } from '../selectors';
 import { REQUEST_STATUS } from '@/constants/requestStatus';
+import { PATHS } from '@/app/router/paths';
 
 export default function LoginForm() {
   const dispatch = useDispatch();
@@ -36,7 +36,7 @@ export default function LoginForm() {
     try {
       await dispatch(loginUser(data)).unwrap();
 
-      navigate('/');
+      navigate(PATHS.public.home);
     } catch (error) {}
   };
 
